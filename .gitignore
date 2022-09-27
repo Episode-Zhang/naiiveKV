@@ -1,0 +1,6 @@
+# 编译器输出文件夹
+out/
+# 配置文件夹
+.idea/
+# demo
+src/demo.java
