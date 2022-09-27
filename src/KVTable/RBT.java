@@ -3,22 +3,22 @@ package KVTable;
 import KVTable.RBTNode;
 
 /**
- * 红黑树实现的内存K-V表.
+ * 实现了KVTable所有接口的红黑树.
  * @param <K> K-V表中键的类型.
  * @param <V> K-V表中值的类型.
  * @author Episode-Zhang
- * @version 1.0
+ * @version 1.0.1
  */
 public class RBT<K, V> implements KVTable<K, V> {
 
     /** 红黑树的根结点. */
-    private RBTNode<K, V> _root;
+    protected RBTNode<K, V> _root;
 
     /** 作为哨兵，红黑树的叶子结点以及树根的父节点默认为黑色的NIL. */
-    private final RBTNode<K, V> NIL;
+    protected final RBTNode<K, V> NIL;
 
     /** 结点个数. */
-    private int _size;
+    protected int _size;
 
     /** 默认构造函数. */
     public RBT() {
@@ -102,7 +102,7 @@ public class RBT<K, V> implements KVTable<K, V> {
      * @param k2 待比较键的后者.
      * @return 前一个键是否小于后一个键，是返回true，否返回false.
      */
-    private boolean lessThan(K k1, K k2) {
+    protected boolean lessThan(K k1, K k2) {
         if (k1 instanceof Comparable && k2 instanceof Comparable) {
             return ((Comparable)k1).compareTo(k2) < 0;
         } else {
@@ -119,7 +119,7 @@ public class RBT<K, V> implements KVTable<K, V> {
      * @param k2 待比较键的后者.
      * @return 前一个键是否大于后一个键，是返回true，否返回false.
      */
-    private boolean greaterThan(K k1, K k2) {
+    protected boolean greaterThan(K k1, K k2) {
         if (k1 instanceof Comparable && k2 instanceof Comparable) {
             return ((Comparable)k1).compareTo(k2) > 0;
         } else {
@@ -133,7 +133,7 @@ public class RBT<K, V> implements KVTable<K, V> {
      * @param key 要求查找的键.
      * @return 若查找命中则返回对应结点，否则返回null.
      */
-    private RBTNode<K, V> find(final RBTNode<K, V> start, K key) {
+    protected RBTNode<K, V> find(final RBTNode<K, V> start, K key) {
         RBTNode<K, V> node = start;
         while (node != this.NIL) {
             if (lessThan(key, node._key)) {
@@ -361,7 +361,7 @@ public class RBT<K, V> implements KVTable<K, V> {
      * 删除红黑树中的一个结点，需要保证结点的!有效性!.
      * @param node 待删除的结点.
      */
-    private void removeNode(final RBTNode<K, V> node) {
+    protected void removeNode(final RBTNode<K, V> node) {
         // 变量 supervisor 追踪将要被删除或者移动的结点
         RBTNode<K, V> supervisor = node;
         // 变量 replacement 追踪 supervisor 在移动或删除后用于填充其原本位置的结点
