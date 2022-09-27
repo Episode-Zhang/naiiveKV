@@ -13,7 +13,7 @@ import java.util.TreeMap;
  * @author Episode-Zhang
  * @version 1.0
  */
-public class testKVTable {
+public class testRBT {
     private final int LOWER = (int) -1e5;
     private final int UPPER = (int) 1e5;
 
