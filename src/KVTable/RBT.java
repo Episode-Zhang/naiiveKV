@@ -7,7 +7,7 @@ import KVTable.RBTNode;
  * @param <K> K-V表中键的类型.
  * @param <V> K-V表中值的类型.
  * @author Episode-Zhang
- * @version 1.0.1
+ * @version 1.0
  */
 public class RBT<K, V> implements KVTable<K, V> {
 
