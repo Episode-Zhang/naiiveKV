@@ -69,4 +69,10 @@ public class Range<K> implements Comparable<Range<K>> {
         // 其它情况，区间有相交就视为相等
         return 0;
     }
+
+    /** 规定区间类的打印格式，便于调试. */
+    @Override
+    public String toString() {
+        return String.format("[%s, %s]", _left.toString(), _right.toString());
+    }
 }
