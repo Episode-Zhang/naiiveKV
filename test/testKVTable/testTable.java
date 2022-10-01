@@ -61,6 +61,27 @@ public class testTable {
     }
 
     @Test
+    public void testInsufficientSizeWithPartialKeys() {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        myTable.put(18, 16);
+        myTable.put(4, 18);
+        myTable.put(0, 18);
+        myTable.put(12, 18);
+        myTable.put(16, 10);
+        myTable.put(7, 0);
+        System.out.println(Arrays.asList((Object[]) myTable.keys(10)));
+        System.out.println(Arrays.asList((Object[]) myTable.values(10)));
+        System.out.println(myTable);
+    }
+
+    @Test
+    public void testEmptyTableWithPartialKeys() {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        System.out.println(Arrays.asList((Object[]) myTable.keys(114514)));
+        System.out.println(Arrays.asList((Object[]) myTable.values(114514)));
+    }
+
+    @Test
     public void testRandomPut() {
         final int N = (int) 1e7;
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
@@ -192,6 +213,7 @@ public class testTable {
         }
         assertEquals(min(officialTable.keySet()), myTable.minKey());
         assertEquals(max(officialTable.keySet()), myTable.maxKey());
+        System.out.println(myTable);
         System.out.println("测试完成");
     }
 

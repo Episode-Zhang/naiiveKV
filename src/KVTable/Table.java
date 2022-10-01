@@ -1,6 +1,8 @@
 package KVTable;
 
+import static View.TableView.viewInString;
 import java.util.LinkedList;
+import java.util.function.Function;
 
 /**
  * 继承了红黑树K-V表，并且缓存了最大/最小键，支持在原有红黑树基础上对分重构的K-V表.
@@ -49,21 +51,29 @@ public class Table<K, V> extends RBT<K, V> {
     }
 
     /** 获取表中前n个键. */
-    public K[] keys(int n) { return new KeySet(n).get(); }
-
-    /** 获取表中前n个值. */
-    public V[] values(int n) { return new ValueSet(n).get(); }
-
-    /** 返回一张表格的视图，通过打印表格中的前十项记录条数. */
-    @Override
-    public String toString() {
-        String view = "";
-        for (int i = 0; i < 10; i++) {
-            //String.format("record %d. [key: %s, value: %s]", i, )
-        }
-        return view;
+    public K[] keys(int n) {
+        KeySet<K> keys = new KeySet<>(n, (key) -> (key));
+        return (K[]) keys.get().toArray();
     }
 
+    /** 获取表中前n个值. */
+    public V[] values(int n) {
+        ValueSet<V> values = new ValueSet<>(n, (value) -> (value));
+        return (V[]) values.get().toArray();
+    }
+
+    /** 返回一张表格的视图，通过打印表格中的前10项记录条数. */
+    @Override
+    public String toString() {
+        // 取前10项键和值
+        final int topN = 10;
+        KeySet<String> topNKeys = new KeySet<>(topN, Object::toString);
+        ValueSet<String> topNValues = new ValueSet<>(topN, Object::toString);
+        LinkedList<String> keys = topNKeys.get();
+        LinkedList<String> values = topNValues.get();
+        // 返回文字视图
+        return viewInString(keys, values);
+    }
 
     /** 将当前表划分为两个子表，保证前一个子表中的所有键都小于后一个子表中的键，返回后一个子表. */
     public Table<K, V> split() {
@@ -132,23 +142,40 @@ public class Table<K, V> extends RBT<K, V> {
         traverseAndMove(origin._right, container);
     }
 
-    /** 用于遍历当前表的键的集合，并且返回指定的前n项. */
-    private class KeySet {
+    /**
+     * 用于遍历当前表的键的集合，并且返回按*给定规则*处理后的前n项.
+     * @param <R> 返回的集合中的元素的类型，若元素为键本身则为{@code <K>}, 否则需指明类型.
+     */
+    private class KeySet<R> {
 
-        /** 存放指定前n个键的容器. */
-        private final LinkedList<K> keys = new LinkedList<>();
+        /** 存放指定前n个键按制定规则处理后得到的结果的容器. */
+        private final LinkedList<R> keys = new LinkedList<>();
 
         /** 用于辅助循环遍历. */
         private LinkedList<RBTNode<K, V>> stack = new LinkedList<>();
 
-        /** 默认构造函数. 在初始化的时候即完成指定键的遍历. */
-        private KeySet(int n) { traverseInorder(_root, n); }
+        /**
+         * 默认构造函数. 在初始化的时候即使用给定规则完成指定键的遍历.
+         * @param n 待获取的前n个键.
+         * @param operator 用于处理每个键的规则, 是一个 K -> R 的一元运算.
+         */
+        public KeySet(int n, Function<K, R> operator) {
+            if (operator == null) {
+                throw new IllegalArgumentException("请指定处理键的对应法则.");
+            }
+            traverseInorder(_root, n, operator);
+        }
 
         /** 返回表中前n个键的集合. */
-        public K[] get() { return (K[]) keys.toArray(); }
+        public LinkedList<R> get() { return keys; }
 
-        /** 用于遍历获得前n个键. */
-        private void traverseInorder(RBTNode<K, V> node, final int n) {
+        /**
+         * 用于遍历获得前n个键并根据指定规则对其进行处理.
+         * @param node 遍历入口结点.
+         * @param n 待获取的前n个键.
+         * @param operator 用于处理每个键的规则, 是一个 K -> R 的一元运算.
+         */
+        private void traverseInorder(RBTNode<K, V> node, int n, Function<K, R> operator) {
             while (node != NIL || stack.size() > 0) {
                 // 向左试探
                 while (node != NIL) {
@@ -157,7 +184,7 @@ public class Table<K, V> extends RBT<K, V> {
                 }
                 // 回溯，将键加入链表
                 node = stack.pop();
-                keys.add(node._key);
+                keys.add(operator.apply(node._key));
                 // 检查项数
                 if (keys.size() == n) { stack = null; return; }
                 // 转向右侧
@@ -166,23 +193,40 @@ public class Table<K, V> extends RBT<K, V> {
         }
     }
 
-    /** 用于遍历当前表的值的集合，并且返回指定的前n项. */
-    private class ValueSet {
+    /**
+     * 用于遍历当前表的值的集合，并且返回按给定规则处理后的前n项.
+     * @param <R> 返回的集合中的元素的类型，若元素为键本身则为{@code <V>}, 否则需指明类型.
+     */
+    private class ValueSet<R> {
 
-        /** 存放指定前n个值的容器. */
-        private final LinkedList<V> values = new LinkedList<>();
+        /** 存放指定前n个值按制定规则处理后得到的结果的容器. */
+        private final LinkedList<R> values = new LinkedList<>();
 
         /** 用于辅助循环遍历. */
         private LinkedList<RBTNode<K, V>> stack = new LinkedList<>();
 
-        /** 默认构造函数. 在初始化的时候即完成指定值的遍历. */
-        private ValueSet(int n) { traverseInorder(_root, n); }
+        /**
+         * 默认构造函数. 在初始化的时候即使用给定规则完成指定值的遍历.
+         * @param n 待获取的前n个值.
+         * @param operator 用于处理每个值的规则, 是一个 V -> R 的一元运算.
+         */
+        public ValueSet(int n, Function<V, R> operator) {
+            if (operator == null) {
+                throw new IllegalArgumentException("请指定处理值的对应法则.");
+            }
+            traverseInorder(_root, n, operator);
+        }
 
         /** 返回表中前n个值的集合. */
-        public V[] get() { return (V[]) values.toArray(); }
+        public LinkedList<R> get() { return values; }
 
-        /** 用于遍历获得前n个值. */
-        private void traverseInorder(RBTNode<K, V> node, final int n) {
+        /**
+         * 用于遍历获得前n个值并根据指定规则对其进行处理.
+         * @param node 遍历入口结点.
+         * @param n 待获取的前n个值.
+         * @param operator 用于处理每个值的规则, 是一个 K -> R 的一元运算.
+         */
+        private void traverseInorder(RBTNode<K, V> node, int n, Function<V, R> operator) {
             while (node != NIL || stack.size() > 0) {
                 // 向左试探
                 while (node != NIL) {
@@ -191,7 +235,7 @@ public class Table<K, V> extends RBT<K, V> {
                 }
                 // 回溯，将值加入链表
                 node = stack.pop();
-                values.add(node._value);
+                values.add(operator.apply(node._value));
                 // 检查项数
                 if (values.size() == n) { stack = null; return; }
                 // 转向右侧
