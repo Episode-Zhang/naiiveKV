@@ -48,6 +48,19 @@ public class testTable {
     }
 
     @Test
+    public void testSimplePartialKeys() {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        myTable.put(18, 16);
+        myTable.put(4, 18);
+        myTable.put(0, 18);
+        myTable.put(12, 18);
+        myTable.put(16, 10);
+        myTable.put(7, 0);
+        System.out.println(Arrays.asList((Object[]) myTable.keys(3)));
+        System.out.println(Arrays.asList((Object[]) myTable.values(3)));
+    }
+
+    @Test
     public void testRandomPut() {
         final int N = (int) 1e7;
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
@@ -271,6 +284,26 @@ public class testTable {
     }
 
     @Test
+    public void testRandomPartialKeys() {
+        final int N = (int) 1e7;
+        final int M = 114514;
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        TreeMap<Integer, Integer> officialTable = new TreeMap<>();
+        System.out.println("随机化插入，测试键的集合");
+        for (int i = 0; i < N; i++) {
+            int key = StdRandom.uniform(LOWER, UPPER);
+            int value = StdRandom.uniform(LOWER, UPPER);
+            myTable.put(key, value);
+            officialTable.put(key, value);
+        }
+        Object[] officialKeys = officialTable.keySet().toArray();
+        Integer[] ans = new Integer[M];
+        System.arraycopy(officialKeys, 0, ans, 0, M);
+        assertArrayEquals(ans, myTable.keys(M));
+        System.out.println("测试完成");
+    }
+
+    @Test
     public void testRandomValues() {
         final int N = (int) 1e7;
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
@@ -285,6 +318,26 @@ public class testTable {
         assertArrayEquals(officialTable.values().toArray(), myTable.values());
         assertEquals(min(officialTable.keySet()), myTable.minKey());
         assertEquals(max(officialTable.keySet()), myTable.maxKey());
+        System.out.println("测试完成");
+    }
+
+    @Test
+    public void testRandomPartialValues() {
+        final int N = (int) 1e7;
+        final int M = 114514;
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        TreeMap<Integer, Integer> officialTable = new TreeMap<>();
+        System.out.println("随机化插入，测试值的集合");
+        for (int i = 0; i < N; i++) {
+            int key = StdRandom.uniform(LOWER, UPPER);
+            int value = StdRandom.uniform(LOWER, UPPER);
+            myTable.put(key, value);
+            officialTable.put(key, value);
+        }
+        Object[] officialValues = officialTable.values().toArray();
+        Integer[] ans = new Integer[M];
+        System.arraycopy(officialValues, 0, ans, 0, M);
+        assertArrayEquals(officialTable.values().toArray(), myTable.values());
         System.out.println("测试完成");
     }
 }
