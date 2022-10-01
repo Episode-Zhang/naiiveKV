@@ -1,7 +1,5 @@
 package KVTable;
 
-import KVTable.RBTNode;
-
 /**
  * 实现了KVTable所有接口的红黑树.
  * @param <K> K-V表中键的类型.
