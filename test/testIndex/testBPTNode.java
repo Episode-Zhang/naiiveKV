@@ -3,12 +3,13 @@ package testIndex;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import static Index.BPTNode.*;
-import Index.Range;
+import Index.Block;
+import Index.IndexBlock;
+import Index.Page;
 import KVTable.Table;
 
 /**
- * 测试B+树的结点{@link Index.BPTNode}
+ * 测试B+树的结点{@link Index.Block}
  * @author Episode-Zhang
  * @version 1.0
  */
@@ -16,6 +17,9 @@ public class testBPTNode {
 
     /** 假设B+树的度为4，即除了根以外的结点长度必须介于 [2, 4]. */
     private final int M = 4;
+
+    /** 假设单张表的容量为100条记录. */
+    private final int capacity = 100;
 
     /** 建表函数. */
     private Table<Integer, Integer> generate(int low, int high) {
@@ -35,25 +39,25 @@ public class testBPTNode {
 
     @Test
     public void testExternalWithoutSplit() {
-        Node<Integer> e1 = new ExternalNode<Integer, Integer>(M);
-        Node<Integer> e2 = new ExternalNode<Integer, Integer>(M);
-        Node<Integer> e3 = new ExternalNode<Integer, Integer>(M);
+        Block<Integer> e1 = new Page<Integer, Integer>(M, capacity);
+        Block<Integer> e2 = new Page<Integer, Integer>(M, capacity);
+        Block<Integer> e3 = new Page<Integer, Integer>(M, capacity);
         /* e1 应该看上去长这样：e1: {([-3, 0] : t1), ([1, 3] : t2)} */
         e1.add(t1);
         e1.add(t2);
-        assertEquals(-3, (int) e1.getRange()._left);
-        assertEquals(3, (int) e1.getRange()._right);
+        assertEquals("[-3, 3]", e1.range().toString());
+        System.out.println(e1);
         /* e2 应该看上去长这样：e1: {(4, 7] : t3), ([11, 20] : t4)} */
         e2.add(t3);
         e2.add(t4);
-        assertEquals(4, (int) e2.getRange()._left);
-        assertEquals(20, (int) e2.getRange()._right);
+        assertEquals("[4, 20]", e2.range().toString());
+        System.out.println(e2);
         /* e3 应该看上去长这样：e1: {(21, 27] : t5), ([30, 32] : t6), ([35, 43] : t7)} */
         e3.add(t5);
         e3.add(t6);
         e3.add(t7);
-        assertEquals(21, (int) e3.getRange()._left);
-        assertEquals(43, (int) e3.getRange()._right);
+        System.out.println(e3);
+        assertEquals("[21, 43]", e3.range().toString());
         // 其它信息
         assertEquals(7, e1.length() + e2.length() + e3.length());
     }
@@ -61,25 +65,25 @@ public class testBPTNode {
     @Test
     public void testInternalWithoutSplit() {
         // 前置数据准备，第一层外部结点
-        Node<Integer> e1 = new ExternalNode<Integer, Integer>(M);
+        Block<Integer> e1 = new Page<Integer, Integer>(M, capacity);
         e1.add(t1); e1.add(t2);
-        Node<Integer> e2 = new ExternalNode<Integer, Integer>(M);
+        Block<Integer> e2 = new Page<Integer, Integer>(M, capacity);
         e2.add(t3); e2.add(t4);
-        Node<Integer> e3 = new ExternalNode<Integer, Integer>(M);
+        Block<Integer> e3 = new Page<Integer, Integer>(M, capacity);
         e3.add(t5); e3.add(t6); e3.add(t7);
         // 第二层内部结点
-        Node<Integer> internal = new InternalNode<>(M);
+        Block<Integer> internal = new IndexBlock<Integer>(M);
         internal.add(e1);
         internal.add(e2);
         internal.add(e3);
-        assertEquals(-3, (int) internal.getRange()._left);
-        assertEquals(43, (int) internal.getRange()._right);
+        assertEquals("[-3, 43]", internal.range().toString());
         assertEquals(3, internal.length());
+        System.out.println(internal);
         // 第三层内部结点
-        Node<Integer> root = new InternalNode<>(M);
+        Block<Integer> root = new IndexBlock<Integer>(M);
         root.add(internal);
-        assertEquals(-3, (int) root.getRange()._left);
-        assertEquals(43, (int) root.getRange()._right);
+        assertEquals("[-3, 43]", root.range().toString());
         assertEquals(1, root.length());
+        System.out.println(root);
     }
 }
