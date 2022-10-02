@@ -21,6 +21,12 @@ public class testTable {
     private final int UPPER = (int) 1e5;
 
     @Test
+    public void testEmptyTable() {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        System.out.println(myTable);
+    }
+
+    @Test
     public void testSimpleSplit() {
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
         myTable.put(-97, -11);
