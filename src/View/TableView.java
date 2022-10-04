@@ -57,8 +57,6 @@ public class TableView {
         }
         // 表尾视图
         view.append(boundary);
-        view.append("...(Rest of the records are hidden)\n");
-        view.append(boundary);
         // 返回
         return view.toString();
     }
