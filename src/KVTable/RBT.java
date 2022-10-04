@@ -25,6 +25,15 @@ public class RBT<K, V> implements KVTable<K, V> {
         _size = 0;
     }
 
+    /** 用一棵结点表示的已有的红黑树来初始化当前红黑树. 无法从外部调用. */
+    protected RBT(RBTNode<K, V> root, RBTNode<K, V> NIL, int size) {
+        _root = root;
+        _root._isRed = false;
+        this.NIL = NIL;
+        _root._parent = this.NIL;
+        _size = size;
+    }
+
     /** 返回当前表中数据项的个数. */
     @Override
     public int size() { return _size; }
@@ -316,7 +325,7 @@ public class RBT<K, V> implements KVTable<K, V> {
      * 修复插入新结点后可能出现的整棵红黑树黑高不平衡的问题.
      * @param node 检查开始处，为新插入的结点.
      */
-    private void fixupInsertion(RBTNode<K, V> node) {
+    protected void fixupInsertion(RBTNode<K, V> node) {
         if (!node._parent._isRed) { return; } // 不再双红，退出
         // 分为8种情况，左右对称各四种
         // 父结点作为左孩子
@@ -456,6 +465,18 @@ public class RBT<K, V> implements KVTable<K, V> {
             }
         }
         node._isRed = false;
+    }
+
+    /** 获取给定结点的黑高. 这里结点的黑高定义为以该结点(含)为根到其任意一叶子结点的简单路径中
+     * 所经过的黑色结点的个数. */
+    protected int blackHeight(RBTNode<K, V> node) {
+        int height = 0;
+        // 选左侧路径
+        while (node != this.NIL) {
+            if (!node._isRed) { height += 1; }
+            node = node._left;
+        }
+        return height;
     }
 
     /** 获取红黑树中的键的集合. */
