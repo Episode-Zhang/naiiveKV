@@ -21,13 +21,88 @@ public class testTable {
     private final int UPPER = (int) 1e5;
 
     @Test
-    public void testEmptyTable() {
+    public void testEmptyTable() throws RuntimeException {
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        System.out.println(myTable);
+        System.out.println(myTable.split());
+    }
+
+    @Test
+    public void testOneRecordTableWithSplit() throws RuntimeException {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        myTable.put(12, 34);
+        System.out.println(myTable.split());
+    }
+
+    @Test
+    public void testOneRecordTableWithMerge() throws RuntimeException {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        Table<Integer, Integer> another = new Table<Integer, Integer>();
+        myTable.put(12, 34);
+        System.out.println(myTable);
+        another.merge(myTable);
+        System.out.println(another);
+    }
+
+    @Test
+    public void testTwoRecordsTableWithSplit() throws RuntimeException {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        // 没有“左半边”
+        myTable.put(12, 34);
+        myTable.put(34, 12);
+        System.out.println(myTable);
+        System.out.println(myTable.split());
+    }
+
+    @Test
+    public void testTwoRecordsTableWithMerge() throws RuntimeException {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        Table<Integer, Integer> another = new Table<Integer, Integer>();
+        myTable.put(12, 34);
+        another.put(34, 12);
+        System.out.println(myTable);
+        System.out.println(another);
+        myTable.merge(another);
         System.out.println(myTable);
     }
 
     @Test
-    public void testSimpleSplit() {
+    public void testThreeRecordsTableWithSplit()  {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        myTable.put(12, 34);
+        myTable.put(34, 12);
+        myTable.put(3, 4);
+        System.out.println(myTable);
+        Table<Integer, Integer> split = myTable.split();
+        System.out.println(split);
+    }
+
+    @Test
+    public void testThreeRecordsTableWithMerge()  {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        Table<Integer, Integer> another = new Table<Integer, Integer>();
+        myTable.put(12, 34);
+        another.put(34, 12);
+        another.put(13, 4);
+        System.out.println(myTable);
+        System.out.println(another);
+        myTable.merge(another);
+        System.out.println(myTable);
+    }
+    @Test
+    public void testSimpleSplitMerge1() {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        myTable.put(2, 1);
+        myTable.put(1, 1);
+        myTable.put(7, 1);
+        myTable.put(9, 1);
+        myTable.put(8, 1);
+        Table<Integer, Integer> rightSide = myTable.split();
+        System.out.println(rightSide);
+    }
+
+    @Test
+    public void testSimpleSplitMerge() {
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
         myTable.put(-97, -11);
         myTable.put(-15, -44);
@@ -51,6 +126,8 @@ public class testTable {
         Table<Integer, Integer> split = myTable.split();
         System.out.println(Arrays.asList(split.keys()));
         System.out.println(Arrays.asList(split.values()));
+        split.merge(myTable);
+        System.out.println(split);
     }
 
     @Test
