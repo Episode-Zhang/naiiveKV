@@ -1,4 +1,7 @@
 package Index;
+
+import static Utils.Utils.lessThan;
+
 /**
  * 整个B+树是基于“区间-表”存储而非单个“键-值”的，这要求结点的键需要为可以用来表示“区间”的
  * 数据结构. {@code Range}类就是用来抽象区间的数据结构.
@@ -22,12 +25,12 @@ public class Range<K> implements Comparable<Range<K>> {
      * {@code compareTo}进行比较；否则就按照其{@code hashCode}的值进行比较.
      * @param left 区间的左端点
      * @param right 区间的右端点
-     * @throws IllegalArgumentException 如果左端点大于等于右端点，这里我们不允许退化的区间存在.
+     * @throws IllegalArgumentException 如果左端点大于右端点.
      */
     public Range(K left, K right) {
         // 类型参数 K 继承了 Comparable，则按照 compareTo 比较
         if (left instanceof Comparable) {
-            if (((Comparable) left).compareTo(right) < 0) {
+            if (((Comparable) left).compareTo(right) <= 0) {
                 _left = left;
                 _right = right;
                 return;
@@ -35,17 +38,22 @@ public class Range<K> implements Comparable<Range<K>> {
         } else { // 否则按照 hashCode 比较
             /* 使用对象内置的 hashCode 进行排序时，需要构造函数进行自适应.
              * 因为此时对用户而言，孰为left孰为right并不那么显然. */
-            if (left.hashCode() < right.hashCode()) {
+            if (left.hashCode() <= right.hashCode()) {
                 _left = left;
                 _right = right;
                 return;
-            } else if (left.hashCode() > right.hashCode()) {
+            } else if (left.hashCode() >= right.hashCode()) {
                 _left = right;
                 _right = left;
                 return;
             }
         }
-        throw new IllegalArgumentException("parameter left should be less than the right.");
+        String errorMsg = String.format("""
+                parameter left should be less than or equal to the right. But now
+                left is: %s
+                right is: %s
+                """, left, right);
+        throw new IllegalArgumentException(errorMsg);
     }
 
     @Override
@@ -68,6 +76,12 @@ public class Range<K> implements Comparable<Range<K>> {
         }
         // 其它情况，区间有相交就视为相等
         return 0;
+    }
+
+    /** 判断一个键是否是否在区间里，是返回true，否则false. */
+    public boolean contains(K key) {
+        return (lessThan(_left, key) || _left.equals(key))
+                && (lessThan(key, _right) || _right.equals(key));
     }
 
     /** 规定区间类的打印格式，便于调试. */
