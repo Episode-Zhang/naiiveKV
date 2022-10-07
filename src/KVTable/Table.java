@@ -1,6 +1,7 @@
 package KVTable;
 
 import static View.TableView.viewInString;
+import static Utils.Utils.*;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.function.Function;
