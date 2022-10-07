@@ -1,7 +1,7 @@
 package View;
 
 import java.util.List;
-import static View.Utils.*;
+import static Utils.Utils.*;
 
 /**
  * 绘制索引块{@link Index.IndexBlock}以及页块{@link Index.Page}的视图.

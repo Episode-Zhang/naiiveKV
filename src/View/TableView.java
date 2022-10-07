@@ -1,7 +1,7 @@
 package View;
 
 import java.util.List;
-import static View.Utils.*;
+import static Utils.Utils.*;
 
 /**
  * 绘制表{@link KVTable.Table}中数据的视图. 其大致形如：
