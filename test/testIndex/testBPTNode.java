@@ -45,19 +45,19 @@ public class testBPTNode {
         /* e1 应该看上去长这样：e1: {([-3, 0] : t1), ([1, 3] : t2)} */
         e1.add(t1);
         e1.add(t2);
-        assertEquals("[-3, 3]", e1.range().toString());
+        assertEquals("[-3, 3]", e1.blockRange().toString());
         System.out.println(e1);
         /* e2 应该看上去长这样：e1: {(4, 7] : t3), ([11, 20] : t4)} */
         e2.add(t3);
         e2.add(t4);
-        assertEquals("[4, 20]", e2.range().toString());
+        assertEquals("[4, 20]", e2.blockRange().toString());
         System.out.println(e2);
         /* e3 应该看上去长这样：e1: {(21, 27] : t5), ([30, 32] : t6), ([35, 43] : t7)} */
         e3.add(t5);
         e3.add(t6);
         e3.add(t7);
         System.out.println(e3);
-        assertEquals("[21, 43]", e3.range().toString());
+        assertEquals("[21, 43]", e3.blockRange().toString());
         // 其它信息
         assertEquals(7, e1.length() + e2.length() + e3.length());
     }
@@ -76,13 +76,13 @@ public class testBPTNode {
         internal.add(e1);
         internal.add(e2);
         internal.add(e3);
-        assertEquals("[-3, 43]", internal.range().toString());
+        assertEquals("[-3, 43]", internal.blockRange().toString());
         assertEquals(3, internal.length());
         System.out.println(internal);
         // 第三层内部结点
         Block<Integer> root = new IndexBlock<Integer>(M);
         root.add(internal);
-        assertEquals("[-3, 43]", root.range().toString());
+        assertEquals("[-3, 43]", root.blockRange().toString());
         assertEquals(1, root.length());
         System.out.println(root);
     }
