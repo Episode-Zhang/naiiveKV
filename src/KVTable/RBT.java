@@ -1,5 +1,7 @@
 package KVTable;
 
+import static Utils.Utils.*;
+
 /**
  * 实现了KVTable所有接口的红黑树.
  * @param <K> K-V表中键的类型.
@@ -98,40 +100,6 @@ public class RBT<K, V> implements KVTable<K, V> {
     @Override
     public Object[] values() {
         return new ValueSet().get();
-    }
-
-    /**
-     * 判断两个键的大小关系.
-     * <p>
-     * 如果键的参数类型K已经定义了内部元素之间的序，则返回其比较结果；否则就将元素内建的hashCode
-     * 的值的大小作为“序”来定义.
-     * @param k1 待比较键的前者.
-     * @param k2 待比较键的后者.
-     * @return 前一个键是否小于后一个键，是返回true，否返回false.
-     */
-    protected boolean lessThan(K k1, K k2) {
-        if (k1 instanceof Comparable && k2 instanceof Comparable) {
-            return ((Comparable)k1).compareTo(k2) < 0;
-        } else {
-            return k1.hashCode() - k2.hashCode() < 0;
-        }
-    }
-
-    /**
-     * 判断两个键的大小关系.
-     * <p>
-     * 如果键的参数类型K已经定义了内部元素之间的序，则返回其比较结果；否则就将元素内建的hashCode
-     * 的值的大小作为“序”来定义.
-     * @param k1 待比较键的前者.
-     * @param k2 待比较键的后者.
-     * @return 前一个键是否大于后一个键，是返回true，否返回false.
-     */
-    protected boolean greaterThan(K k1, K k2) {
-        if (k1 instanceof Comparable && k2 instanceof Comparable) {
-            return ((Comparable)k1).compareTo(k2) > 0;
-        } else {
-            return k1.hashCode() - k2.hashCode() > 0;
-        }
     }
 
     /**
