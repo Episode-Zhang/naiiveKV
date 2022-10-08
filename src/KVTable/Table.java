@@ -48,10 +48,10 @@ public class Table<K, V> extends RBT<K, V> {
     public V delete(K key) {
         RBTNode<K, V> target = find(_root, key);
         if (target == null) { return null; }
-        // 查看被删除键是否为最大/最小键
-        if (key.equals(_minKey)) { _minKey = nextMinKey(target); }
-        if (key.equals(_maxKey)) { _maxKey = nextMaxKey(target); }
         super.removeNode(target);
+        // 查看被删除键是否为最大/最小键，是则更新
+        if (key.equals(_minKey)) { _minKey = min(_root); }
+        if (key.equals(_maxKey)) { _maxKey =  max(_root); }
         return target._value;
     }
 
@@ -89,7 +89,7 @@ public class Table<K, V> extends RBT<K, V> {
         V rootValue = _root._value;
         // 划分右子树
         Table<K, V> rightTree = new Table<K, V>(_root._right, this.NIL, rightTreeSize);
-        this._root._right = null;
+        this._root._right = this.NIL;
         // 令当前红黑树为左子树
         this._root = _root._left;
         this._root._isRed = false;
@@ -105,21 +105,31 @@ public class Table<K, V> extends RBT<K, V> {
     }
 
     /**
-     * 将当前表与另外一张表合并. 且保证
+     * 将给定表并入当前表. 且保证
      * <p> 1. 当前表的索引区域和另一张表的索引区域*无交集*；
      * <p> 2. table的黑高小于当前表(总是小表加入大表)；
      * <p> 3. 不允许合并过程中出现空表.
      * @param table 将要与当前表进行合并的另一张表.
-     * @throws RuntimeException 若待合并的表中出现空表.
+     * @deprecated 因为各个红黑树NIL结点的不同一性导致该方法实现时具有困难.
+     * @throws RuntimeException 若待合并的表中出现空表或重复的键.
      */
-    public void merge(Table<K, V> table) throws RuntimeException {
-        if (_size < 2 || table.size() < 2) {
+    @Deprecated
+    public void buggyMerge(Table<K, V> table) throws RuntimeException {
+        if (_size == 0 || table.size() == 0) {
             String errorMsg = String.format("""
-                    The two tables in merge method are forced to be at least are of size 2.
+                    Empty tables are not allowed.
                     Size of this to-be-merged table: %d
                     Size of parameter merging table: %d
                     """, _size, table._size);
             throw new RuntimeException(errorMsg);
+        }
+        // 如果小表，直接散装搬入
+        if (table.size() < 2) {
+            Object[] tableKeys = table.keys();
+            for (Object key : tableKeys) {
+                this.put((K) key, table.delete((K) key));
+            }
+            return;
         }
         // 当前表的索引区间在table的左侧
         if (lessThan(_maxKey, table._minKey)) {
@@ -130,6 +140,7 @@ public class Table<K, V> extends RBT<K, V> {
             this._size += table._size + 1;
             table._root = table.NIL;
             table._size = 0;
+            _maxKey = max(_root);
         } else if (greaterThan(_minKey, table._maxKey)) { // 当前表的区间索引在table的右侧
             K partitionKey = this._minKey;
             V partitionValue = this.delete(_minKey);
@@ -138,6 +149,7 @@ public class Table<K, V> extends RBT<K, V> {
             this._size += table._size + 1;
             table._root = table.NIL;
             table._size = 0;
+            _minKey = min(_root);
         } else {
             String errorMsg = String.format("""
                             There are duplicated keys in both tables. Please check:
@@ -148,6 +160,17 @@ public class Table<K, V> extends RBT<K, V> {
                     _maxKey, _minKey, table._maxKey, table._minKey);
             throw new RuntimeException(errorMsg);
         }
+    }
+
+    /**
+     * 按照顺序读入读出的方法将给定表并入当前表. 且保证
+     * <p> 1. 当前表的索引区域和另一张表的索引区域*无交集*；
+     * <p> 2. table的黑高小于当前表(总是小表加入大表)；
+     * @param table 将要与当前表进行合并的另一张表.
+     * @throws RuntimeException 若待合并的表中出现空表或重复的键.
+     */
+    public void merge(Table<K, V> table) throws RuntimeException {
+        moveTo(table._root, table._root, table.NIL, this);
     }
 
     /** 返回一张表格的视图，通过打印表格中的前10项记录条数. */
@@ -188,6 +211,7 @@ public class Table<K, V> extends RBT<K, V> {
 
     /** 获取以{@code start} 为根节点的树中的最小键. */
     private K min(final RBTNode<K, V> start) {
+        if (start == this.NIL) { return null; }
         RBTNode<K, V> node = start;
         while (node._left != this.NIL) {
             node = node._left;
@@ -197,6 +221,7 @@ public class Table<K, V> extends RBT<K, V> {
 
     /** 获取以{@code start} 为根节点的树中的最大键. */
     private K max(final RBTNode<K, V> start) {
+        if (start == this.NIL) { return null; }
         RBTNode<K, V> node = start;
         while (node._right != this.NIL) {
             node = node._right;
@@ -219,6 +244,14 @@ public class Table<K, V> extends RBT<K, V> {
     private void joinRight(K key, V value, RBTNode<K, V> table) {
         RBTNode<K, V> thisNode = _root;
         int thisHeight = blackHeight(thisNode), mergedHeight = blackHeight(table);
+        if (thisHeight <= mergedHeight) {
+            String errorMsg = String.format("""
+                It is supposed that the merging table's black height is greater than one be merged.
+                The black height of this to-be-merged table is: %d
+                The black height of parameter merging table is: %d
+                """, thisHeight, mergedHeight);
+            throw new IllegalArgumentException(errorMsg);
+        }
         while (thisHeight >= mergedHeight) {
             // 黑高相等的情况下进行合并
             if (thisHeight == mergedHeight) {
@@ -237,12 +270,6 @@ public class Table<K, V> extends RBT<K, V> {
             thisNode = thisNode._right;
             thisHeight = blackHeight(thisNode);
         }
-        String errorMsg = String.format("""
-                It is supposed that the merging table's black height is greater than one be merged.
-                The black height of this to-be-merged table is: %d
-                The black height of parameter merging table is: %d
-                """, thisHeight, mergedHeight);
-        throw new IllegalArgumentException(errorMsg);
     }
 
     /**
@@ -260,6 +287,14 @@ public class Table<K, V> extends RBT<K, V> {
     private void joinLeft(K key, V value, RBTNode<K, V> table) {
         RBTNode<K, V> thisNode = _root;
         int thisHeight = blackHeight(thisNode), mergedHeight = blackHeight(table);
+        if (thisHeight <= mergedHeight) {
+            String errorMsg = String.format("""
+                It is supposed that the merging table's black height is greater than one be merged.
+                The black height of this to-be-merged table is: %d
+                The black height of parameter merging table is: %d
+                """, thisHeight, mergedHeight);
+            throw new IllegalArgumentException(errorMsg);
+        }
         while (thisHeight >= mergedHeight) {
             // 黑高相等的情况下进行合并
             if (thisHeight == mergedHeight) {
@@ -268,7 +303,7 @@ public class Table<K, V> extends RBT<K, V> {
                 // 连接当前表的结点以及给定表的结点，作为整体插入回当前树中.
                 mergedNode._left = table;
                 mergedNode._right = thisNode;
-                thisNode._parent._left = mergedNode;
+                thisNode._parent._left = mergedNode; // ! TODO 如果thisNode = root ? 中转站变成NIL了
                 mergedNode._parent = thisNode._parent;
                 // 调整可能出现的双红冲突
                 fixupInsertion(mergedNode);
@@ -278,13 +313,20 @@ public class Table<K, V> extends RBT<K, V> {
             thisNode = thisNode._left;
             thisHeight = blackHeight(thisNode);
         }
-        String errorMsg = String.format("""
-                It is supposed that the merging table's black height is greater than one be merged.
-                The black height of this to-be-merged table is: %d
-                The black height of parameter merging table is: %d
-                """, thisHeight, mergedHeight);
-        throw new IllegalArgumentException(errorMsg);
     }
+
+    /** 中序遍历一个根节点并把记录移入另一张表中. */
+    private void moveTo(RBTNode<K, V> node, final RBTNode<K, V> root, final RBTNode<K, V> NIL, Table<K, V> container) {
+        if (node == NIL) { return; }
+        moveTo(node._left, root, NIL, container);
+        container.put(node._key, node._value);
+        if (node != root) {
+            if (node == node._parent._left) { node._parent._left = NIL; }
+            else if (node == node._parent._right) { node._parent._right = NIL; }
+        }
+        moveTo(node._right, root, NIL, container);
+    }
+
 
     /**
      * 用于遍历当前表的键的集合，并且返回按*给定规则*处理后的前n项.

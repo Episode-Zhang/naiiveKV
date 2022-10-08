@@ -7,6 +7,7 @@ import edu.princeton.cs.algs4.StdRandom;
 import static Utils.Utils.*;
 import Index.BPlusTree;
 import KVTable.Table;
+import java.util.TreeMap;
 
 public class testInMemoryBPT {
 
@@ -106,6 +107,139 @@ public class testInMemoryBPT {
     }
 
     @Test
+    public void testSimpleInsertDeleteWithBuffer1() {
+        BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 6);
+        Table<Integer, Integer> buffer = new Table<Integer, Integer>();
+        // 插入
+        int[] keys = {42, 90, 42, 38, 46, 29, 20, 92, 5, 72, 54, 41, 1, 90, 33, 29, 11, 93, 61, 54};
+        for (int key : keys) {
+            if (index.empty() || greaterThan(key, index.indexRange()._right)) {
+                buffer.put(key, 1);
+                // 缓冲区满以后，将内容写入索引区，刷新缓冲.
+                if (buffer.size() == 4) {
+                    index.write(buffer);
+                    buffer = new Table<Integer, Integer>();
+                }
+            } else { // 否则在索引区中相应的表插入记录
+                index.insert(key, 1);
+            }
+        }
+        // 剩余非空缓存写入
+        if (!buffer.empty()) { index.write(buffer); buffer = new Table<Integer, Integer>(); }
+        // 删除
+        assertNull(index.delete(66));
+        assertEquals(1, (int) index.delete(11));
+    }
+
+    @Test
+    public void testSimpleInsertDeleteWithBuffer2() {
+        BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 6);
+        Table<Integer, Integer> buffer = new Table<Integer, Integer>();
+        // 插入
+        int[] keys = {1, 72, 33, 49, 52, 96, 60, 48, 33, 73, 20, 95, 85, 67, 79, 30, 8, 2, 63, 31};
+        for (int key : keys) {
+            if (index.empty() || greaterThan(key, index.indexRange()._right)) {
+                buffer.put(key, 1);
+                // 缓冲区满以后，将内容写入索引区，刷新缓冲.
+                if (buffer.size() == 4) {
+                    index.write(buffer);
+                    buffer = new Table<Integer, Integer>();
+                }
+            } else { // 否则在索引区中相应的表插入记录
+                index.insert(key, 1);
+            }
+        }
+        // 剩余非空缓存写入
+        if (!buffer.empty()) { index.write(buffer); buffer = new Table<Integer, Integer>(); }
+        // 删除
+        assertNull(index.delete(26));
+        assertNull(index.delete(83));
+        assertNull(index.delete(83));
+        assertNull(index.delete(17));
+        assertNull(index.delete(6));
+        assertEquals(1, (int) index.delete(2));
+        assertEquals(1, (int) index.delete(95));
+        assertEquals(1, (int) index.delete(60));
+        assertEquals(1, (int) index.delete(30));
+        System.out.println(index.indexView());
+    }
+
+    @Test
+    public void testSimpleInsertDeleteWithBuffer3() {
+        BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 6);
+        Table<Integer, Integer> buffer = new Table<Integer, Integer>();
+        // 插入
+        int[] keys = {47, 80, 53, 63, 77, 71, 78, 92, 0, 0, 69, 76, 63, 21, 44, 15, 23, 82, 45, 26};
+        for (int key : keys) {
+            if (index.empty() || greaterThan(key, index.indexRange()._right)) {
+                buffer.put(key, 1);
+                // 缓冲区满以后，将内容写入索引区，刷新缓冲.
+                if (buffer.size() == 4) {
+                    index.write(buffer);
+                    buffer = new Table<Integer, Integer>();
+                }
+            } else { // 否则在索引区中相应的表插入记录
+                index.insert(key, 1);
+            }
+        }
+        // 剩余非空缓存写入
+        if (!buffer.empty()) { index.write(buffer); buffer = new Table<Integer, Integer>(); }
+        // 删除
+        assertNull(index.delete(37));
+        assertNull(index.delete(61));
+        assertNull(index.delete(8));
+        assertNull(index.delete(65));
+        assertNull(index.delete(2));
+        assertNull(index.delete(46));
+        assertEquals(1, (int) index.delete(80));
+        assertEquals(1, (int) index.delete(21));
+        assertEquals(1, (int) index.delete(92));
+        System.out.println(index.indexView());
+    }
+
+    @Test
+    public void testSimpleInsertDeleteWithBuffer4() {
+        final int BUFFERCAPACITY = 20, M = 4, TABLECAPACITY = 60;
+        Table<Integer, Integer> buffer = new Table<Integer, Integer>();
+        BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
+        TreeMap<Integer, Integer> table = new TreeMap<>();
+        // 插入数据
+        final int N = 50;
+        int[] keys = {93, 73, 78, 30, 31, 86, 96, 9, 77, 22,
+                78, 4, 69, 38, 83, 41, 38, 69, 14, 22,
+                30, 2, 94, 12, 20, 91, 79, 14, 36, 64,
+                60, 65, 56, 76, 53, 31, 31, 37, 85, 74,
+                37, 6, 94, 0, 96, 13, 33, 74, 58, -52};
+        int[] values = {-78, 17, 70, 73, -100, 69, 77, 29, 17, 75,
+                0, 84, -52, 84, 22, 8, 33, -83, 60, -82,
+                0, 50, -39, -44, -14, -28, -23, 11, 50, 28,
+                -73, -3, 20, -19, -40, 7, 64, -27, 30, 0,
+                -65, -29, -61, -24, 53, -46, -63, 73, 85, 83};
+        for (int i = 0; i < N; i++) {
+            //System.out.printf("(%d, %d)\n", key, value);
+            table.put(keys[i], values[i]);
+            // 如果索引区中尚未有数据表或当前记录的键不在索引范围中，将记录存入缓冲区
+            if (index.empty() || greaterThan(keys[i], index.indexRange()._right)) {
+                buffer.put(keys[i], values[i]);
+                // 缓冲区满以后，将内容写入索引区，刷新缓冲.
+                if (buffer.size() == BUFFERCAPACITY) {
+                    index.write(buffer);
+                    buffer = new Table<Integer, Integer>();
+                }
+            } else { // 否则在索引区中相应的表插入记录
+                index.insert(keys[i], values[i]);
+            }
+        }
+        if (!buffer.empty()) { index.write(buffer); }
+        // 删除
+        assertEquals(table.remove(56), index.delete(56));
+        assertEquals(table.remove(96), index.delete(96));
+        assertEquals(table.remove(94), index.delete(94));
+        // 查看视图
+        System.out.println(index.indexView());
+    }
+
+    @Test
     public void testRandomInsert() {
         Table<Integer, Integer> t1 = new Table<Integer, Integer>();
         t1.put(LOWER, -1); t1.put(UPPER, 1);
@@ -146,4 +280,80 @@ public class testInMemoryBPT {
         System.out.println(index.indexView());
     }
 
+    @Test
+    public void testSimpleRandomInsertPutDeleteWithBuffer() {
+        final int BUFFERCAPACITY = 50, M = 4, TABLECAPACITY = 60;
+        Table<Integer, Integer> buffer = new Table<Integer, Integer>();
+        BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
+        TreeMap<Integer, Integer> table = new TreeMap<>();
+        // 插入数据
+        final int N = (int) 1e3;
+        for (int i = 0; i < N; i++) {
+            int key = StdRandom.uniform(0, 100), value = StdRandom.uniform(-100, 100);
+            System.out.printf("(%d, %d)\n", key, value);
+            table.put(key, value);
+            // 如果索引区中尚未有数据表或当前记录的键不在索引范围中，将记录存入缓冲区
+            if (index.empty() || greaterThan(key, index.indexRange()._right)) {
+                buffer.put(key, value);
+                // 缓冲区满以后，将内容写入索引区，刷新缓冲.
+                if (buffer.size() == BUFFERCAPACITY) {
+                    index.write(buffer);
+                    buffer = new Table<Integer, Integer>();
+                }
+            } else { // 否则在索引区中相应的表插入记录
+                index.insert(key, value);
+            }
+        }
+        if (!buffer.empty()) { index.write(buffer); }
+        // 读取与删除
+        for (int i = 0; i < N; i++) {
+            int key = StdRandom.uniform(-100, 100);
+            System.out.printf("(%d)\n", key);
+            assertEquals(table.get(key), index.get(key));
+            assertEquals(table.remove(key), index.delete(key)); // 删除
+        }
+        // 查看视图
+        System.out.println(index.indexView());
+    }
+
+    @Test
+    public void testRandomInsertPutDeleteWithBuffer() {
+        final int BUFFERCAPACITY = 2048, M = 32, TABLECAPACITY = 4096;
+        Table<Integer, Integer> buffer = new Table<Integer, Integer>();
+        BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
+        TreeMap<Integer, Integer> table = new TreeMap<>();
+        // 插入数据
+        final int N = (int) 1e7;
+        for (int i = 0; i < N; i++) {
+            int key = StdRandom.uniform(LOWER, UPPER), value = StdRandom.uniform(LOWER, UPPER);
+            table.put(key, value);
+            // 如果索引区中尚未有数据表或当前记录的键不在索引范围中，将记录存入缓冲区
+            if (index.empty() || greaterThan(key, index.indexRange()._right)) {
+                buffer.put(key, value);
+                // 缓冲区满以后，将内容写入索引区，刷新缓冲.
+                if (buffer.size() == BUFFERCAPACITY) {
+                    index.write(buffer);
+                    buffer = new Table<Integer, Integer>();
+                }
+            } else { // 否则在索引区中相应的表插入记录
+                index.insert(key, value);
+            }
+        }
+        if (!buffer.empty()) { index.write(buffer); }
+        // 读取与删除
+        for (int i = 0; i < N; i++) {
+            int key = StdRandom.uniform(LOWER, UPPER);
+            int mode = StdRandom.uniform(0, 2);
+            switch (mode) {
+                case 0 -> {
+                    assertEquals(table.get(key), index.get(key));
+                    assertEquals(table.remove(key), index.delete(key)); // 删除
+                }
+                // case 1 -> assertEquals(table.get(key), index.get(key)); // 读取
+                default -> {}
+            }
+        }
+        // 查看视图
+        System.out.println(index.indexView());
+    }
 }
