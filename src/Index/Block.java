@@ -30,12 +30,21 @@ public interface Block<K> {
     /** 更新当前结点在对应位置的索引区间. */
     void setRange(int pos, Range<K> range);
 
+    /** 更新当前块中数据项的个数. */
+    void setLength(int length);
+
     /** 向结点中添加对应的数据. 内部结点为包括了下一层级索引的结点, 外部结点则为对应的表. */
-    void add(Object value);
+    void add(Object item);
+
+    /** 在结点指定位置插入对应数据项，内部结点为下一级的索引块，外部结点为表. */
+    void addAt(Object item, int index);
 
     /** 获取结点对应位置的块的引用. */
     Object get(int index);
 
-    /** 弹出结点对应位置的块的引用. */
+    /** 弹出结点对应位置的块的引用. 但不更改对应快的位置. 因此方法会修改块的长度，因此使用时请!注意解耦!. */
     Object pop(int index);
+
+    /** 删除并返回对应位置的块的引用，且每次删除回重新排列块的位置. */
+    Object removeAt(int index);
 }

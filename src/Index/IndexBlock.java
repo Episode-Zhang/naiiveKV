@@ -61,7 +61,7 @@ public class IndexBlock<K> implements Block<K> {
         _loc = loc;
     }
 
-    /** 返回当前索引块中索引区域的个树. */
+    /** 返回当前索引块中索引区域的个数. */
     @Override
     public int length() { return _length; }
 
@@ -71,13 +71,26 @@ public class IndexBlock<K> implements Block<K> {
         return _blocks[index];
     }
 
-    /** 弹出{@code index}对应位置的块. */
+    /** 弹出{@code index}对应位置的块. *不移动*其它块. */
     @Override
     public Object pop(int index) {
         Block<K> block = _blocks[index];
         _blocks[index] = null;
         _indexes[index] = null; // 对应位置的索引区域也要跟随弹出.
         _length -= 1;
+        return block;
+    }
+
+    /** 删除并返回{@code index}对应位置的块. 同时重新排列其余的块. */
+    @Override
+    public Object removeAt(int index) {
+        Block<K> block = _blocks[index];
+        for (int i = index + 1; i < _length; i++) {
+            _blocks[i - 1] = _blocks[i];
+            _blocks[i].setParent(this, i - 1);
+            _indexes[i - 1] = _indexes[i];
+        }
+        this.pop(_length - 1);
         return block;
     }
 
@@ -116,6 +129,10 @@ public class IndexBlock<K> implements Block<K> {
     @Override
     public void setRange(int pos, Range<K> range) { _indexes[pos] = range; }
 
+    /** 更新当前索引块中索引区域的个数. */
+    @Override
+    public void setLength(int length) { _length = length; }
+
     /** 向索引块中添加下一级的块. */
     @Override
     public void add(Object node) {
@@ -133,17 +150,20 @@ public class IndexBlock<K> implements Block<K> {
      * @param block 给定待插入的块.
      * @param pos 当前结点中指定插入的位置.
      */
-    public void addAt(Block<K> block, int pos) {
+    @Override
+    public void addAt(Object block, int pos) {
+        Block<K> targetBlock = (Block<K>) block;
         // 腾出空间
         for (int i = _length; i > pos; i--) {
             _blocks[i] = _blocks[i - 1];
+            _blocks[i - 1].setParent(this, i);
             _indexes[i] = _indexes[i - 1];
         }
         // 插入块
-        _blocks[pos] = block;
-        _indexes[pos] = block.blockRange();
+        _blocks[pos] = targetBlock;
+        _indexes[pos] = targetBlock.blockRange();
         // 更新parent和位置pos
-        block.setParent(this, pos);
+        targetBlock.setParent(this, pos);
         _length += 1;
     }
 

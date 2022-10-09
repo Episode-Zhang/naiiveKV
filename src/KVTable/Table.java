@@ -48,10 +48,10 @@ public class Table<K, V> extends RBT<K, V> {
     public V delete(K key) {
         RBTNode<K, V> target = find(_root, key);
         if (target == null) { return null; }
-        // 查看被删除键是否为最大/最小键
-        if (key.equals(_minKey)) { _minKey = nextMinKey(target); }
-        if (key.equals(_maxKey)) { _maxKey = nextMaxKey(target); }
         super.removeNode(target);
+        // 查看被删除键是否为最大/最小键，是则更新
+        if (key.equals(_minKey)) { _minKey = min(_root); }
+        if (key.equals(_maxKey)) { _maxKey =  max(_root); }
         return target._value;
     }
 
@@ -89,7 +89,7 @@ public class Table<K, V> extends RBT<K, V> {
         V rootValue = _root._value;
         // 划分右子树
         Table<K, V> rightTree = new Table<K, V>(_root._right, this.NIL, rightTreeSize);
-        this._root._right = null;
+        this._root._right = this.NIL;
         // 令当前红黑树为左子树
         this._root = _root._left;
         this._root._isRed = false;
@@ -102,52 +102,6 @@ public class Table<K, V> extends RBT<K, V> {
         this._maxKey = max(_root);
         this._size -= rightTree.size();
         return rightTree;
-    }
-
-    /**
-     * 将当前表与另外一张表合并. 且保证
-     * <p> 1. 当前表的索引区域和另一张表的索引区域*无交集*；
-     * <p> 2. table的黑高小于当前表(总是小表加入大表)；
-     * <p> 3. 不允许合并过程中出现空表.
-     * @param table 将要与当前表进行合并的另一张表.
-     * @throws RuntimeException 若待合并的表中出现空表.
-     */
-    public void merge(Table<K, V> table) throws RuntimeException {
-        if (_size < 2 || table.size() < 2) {
-            String errorMsg = String.format("""
-                    The two tables in merge method are forced to be at least are of size 2.
-                    Size of this to-be-merged table: %d
-                    Size of parameter merging table: %d
-                    """, _size, table._size);
-            throw new RuntimeException(errorMsg);
-        }
-        // 当前表的索引区间在table的左侧
-        if (lessThan(_maxKey, table._minKey)) {
-            K partitionKey = table._minKey;
-            V partitionValue = table.delete(table._minKey);
-            joinRight(partitionKey, partitionValue, table._root);
-            // 更新信息
-            this._size += table._size + 1;
-            table._root = table.NIL;
-            table._size = 0;
-        } else if (greaterThan(_minKey, table._maxKey)) { // 当前表的区间索引在table的右侧
-            K partitionKey = this._minKey;
-            V partitionValue = this.delete(_minKey);
-            joinLeft(partitionKey, partitionValue, table._root);
-            // 更新信息
-            this._size += table._size + 1;
-            table._root = table.NIL;
-            table._size = 0;
-        } else {
-            String errorMsg = String.format("""
-                            There are duplicated keys in both tables. Please check:
-                            Max key in this table: %s
-                            Min key in this table: %s
-                            Max key in parameter table: %s
-                            Min key in parameter table: %s""",
-                    _maxKey, _minKey, table._maxKey, table._minKey);
-            throw new RuntimeException(errorMsg);
-        }
     }
 
     /** 返回一张表格的视图，通过打印表格中的前10项记录条数. */
@@ -167,27 +121,9 @@ public class Table<K, V> extends RBT<K, V> {
         return view.toString();
     }
 
-    /** 根据所给定的当前表中最小键所在的结点找到并返回第二小的键. */
-    private K nextMinKey(final RBTNode<K, V> minNode) {
-        if (minNode == _root) { return null; }
-        RBTNode<K, V> parent = minNode._parent;
-        RBTNode<K, V> sibling = parent._right;
-        if (sibling == this.NIL) { return parent._key; }
-        K siblingMinKey = min(sibling);
-        return lessThan(siblingMinKey, parent._key) ? siblingMinKey : parent._key;
-    }
-
-    private K nextMaxKey(final RBTNode<K, V> maxNode) {
-        if (maxNode == _root) { return null; }
-        RBTNode<K, V> parent = maxNode._parent;
-        RBTNode<K, V> sibling = parent._left;
-        if (sibling == this.NIL) { return parent._key; }
-        K siblingMaxKey = max(sibling);
-        return greaterThan(siblingMaxKey, parent._key) ? siblingMaxKey : parent._key;
-    }
-
     /** 获取以{@code start} 为根节点的树中的最小键. */
     private K min(final RBTNode<K, V> start) {
+        if (start == this.NIL) { return null; }
         RBTNode<K, V> node = start;
         while (node._left != this.NIL) {
             node = node._left;
@@ -197,93 +133,12 @@ public class Table<K, V> extends RBT<K, V> {
 
     /** 获取以{@code start} 为根节点的树中的最大键. */
     private K max(final RBTNode<K, V> start) {
+        if (start == this.NIL) { return null; }
         RBTNode<K, V> node = start;
         while (node._right != this.NIL) {
             node = node._right;
         }
         return node._key;
-    }
-
-    /**
-     * 规定：
-     *   <p> 1. 当前表中所有的键都小于 key；
-     *   <p> 2. table 中所有的键都大于 key；
-     *   <p> 3. 给定的table的黑高小于当前表.
-     * <p>
-     * 将给定的table表合并入当前的表中.
-     * @param key 用户划分的键.
-     * @param value 和键匹配的值
-     * @param table 待合并的红黑树，满足其中所有的键都大于 key.
-     * @throws IllegalArgumentException 如果给定的表的黑高大于当前表的黑高.
-     */
-    private void joinRight(K key, V value, RBTNode<K, V> table) {
-        RBTNode<K, V> thisNode = _root;
-        int thisHeight = blackHeight(thisNode), mergedHeight = blackHeight(table);
-        while (thisHeight >= mergedHeight) {
-            // 黑高相等的情况下进行合并
-            if (thisHeight == mergedHeight) {
-                // 新插入的结点为红色
-                RBTNode<K, V> mergedNode = new RBTNode<>(key, value, true);
-                // 连接当前表的结点以及给定表的结点，作为整体插入回当前树中.
-                mergedNode._left = thisNode;
-                mergedNode._right = table;
-                thisNode._parent._right = mergedNode;
-                mergedNode._parent = thisNode._parent;
-                // 调整可能出现的双红冲突
-                fixupInsertion(mergedNode);
-                return;
-            }
-            // 否则深入当前树中的右子树
-            thisNode = thisNode._right;
-            thisHeight = blackHeight(thisNode);
-        }
-        String errorMsg = String.format("""
-                It is supposed that the merging table's black height is greater than one be merged.
-                The black height of this to-be-merged table is: %d
-                The black height of parameter merging table is: %d
-                """, thisHeight, mergedHeight);
-        throw new IllegalArgumentException(errorMsg);
-    }
-
-    /**
-     * 规定：
-     *   <p> 1. 当前表中所有的键都大于 key；
-     *   <p> 2. table 中所有的键都小于 key；
-     *   <p> 3. 给定的table的黑高小于当前表.
-     * <p>
-     * 将给定的table表合并入当前的表中.
-     * @param key 用户划分的键.
-     * @param value 和键匹配的值
-     * @param table 待合并的红黑树，满足其中所有的键都小于 key.
-     * @throws IllegalArgumentException 如果给定的表的黑高大于当前表的黑高.
-     */
-    private void joinLeft(K key, V value, RBTNode<K, V> table) {
-        RBTNode<K, V> thisNode = _root;
-        int thisHeight = blackHeight(thisNode), mergedHeight = blackHeight(table);
-        while (thisHeight >= mergedHeight) {
-            // 黑高相等的情况下进行合并
-            if (thisHeight == mergedHeight) {
-                // 新插入的结点为红色
-                RBTNode<K, V> mergedNode = new RBTNode<>(key, value, true);
-                // 连接当前表的结点以及给定表的结点，作为整体插入回当前树中.
-                mergedNode._left = table;
-                mergedNode._right = thisNode;
-                thisNode._parent._left = mergedNode;
-                mergedNode._parent = thisNode._parent;
-                // 调整可能出现的双红冲突
-                fixupInsertion(mergedNode);
-                return;
-            }
-            // 否则深入当前树中的左子树
-            thisNode = thisNode._left;
-            thisHeight = blackHeight(thisNode);
-        }
-        String errorMsg = String.format("""
-                It is supposed that the merging table's black height is greater than one be merged.
-                The black height of this to-be-merged table is: %d
-                The black height of parameter merging table is: %d
-                """, thisHeight, mergedHeight);
-        throw new IllegalArgumentException(errorMsg);
     }
 
     /**
@@ -356,7 +211,7 @@ public class Table<K, V> extends RBT<K, V> {
          * @param n 待获取的前n个值.
          * @param operator 用于处理每个值的规则, 是一个 V -> R 的一元运算.
          */
-        public ValueSet(RBTNode root, int n, Function<V, R> operator) {
+        public ValueSet(RBTNode<K, V> root, int n, Function<V, R> operator) {
             if (operator == null) {
                 throw new IllegalArgumentException("请指定处理值的对应法则.");
             }

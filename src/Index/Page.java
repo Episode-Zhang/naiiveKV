@@ -33,9 +33,6 @@ public class Page<K, V> implements Block<K> {
     /** 当前页在上一级索引块中所处的位置. */
     private int _loc;
 
-    /** 当前页的id. */
-    private int _pageId;
-
     /** 当前页中表的张数. */
     private int _length;
 
@@ -82,13 +79,25 @@ public class Page<K, V> implements Block<K> {
         return _tables[index];
     }
 
-    /** 弹出{@code index}对应位置的表. */
+    /** 弹出{@code index}对应位置的表，*不移动*其它表. */
     @Override
     public Object pop(int index) {
         Table<K, V> table = _tables[index];
         _tables[index] = null;
         _ranges[index] = null; // 对应位置的索引区域也要跟随弹出.
         _length -= 1;
+        return table;
+    }
+
+    /**  删除并返回{@code index}对应位置的表，同时重新排列其余的表. */
+    @Override
+    public Object removeAt(int index) {
+        Table<K, V> table = _tables[index];
+        for (int i = index + 1; i < _length; i++) {
+            _tables[i - 1] = _tables[i];
+            _ranges[i - 1] = _ranges[i];
+        }
+        this.pop(_length - 1);
         return table;
     }
 
@@ -126,10 +135,11 @@ public class Page<K, V> implements Block<K> {
     @Override
     public void setRange(int pos, Range<K> range) { _ranges[pos] = range; }
 
-    /** 获取该页对应的id. */
-    public int id() { return _pageId; }
+    /** 更新当前页中表的张数. */
+    @Override
+    public void setLength(int length) { _length = length; }
 
-    /** 向页中加入一张新的表. 由缓冲区满写而来. */
+    /** 向页中加入一张新的表. */
     @Override
     public void add(Object table) {
         Table<K, V> fullTable = (Table<K, V>) table;
@@ -144,15 +154,17 @@ public class Page<K, V> implements Block<K> {
      * @param table 给定待插入的表.
      * @param pos 当前页中指定插入的位置.
      */
-    public void addAt(Table<K, V> table, int pos) {
+    @Override
+    public void addAt(Object table, int pos) {
+        Table<K, V> targetTable = (Table<K, V>) table;
         // 腾出空间
         for (int i = _length; i > pos; i--) {
             _tables[i] = _tables[i - 1];
             _ranges[i] = _ranges[i - 1];
         }
-        // 插入块
-        _tables[pos] = table;
-        _ranges[pos] = new Range<>(table.minKey(), table.maxKey());
+        // 插入表
+        _tables[pos] = targetTable;
+        _ranges[pos] = new Range<>(targetTable.minKey(), targetTable.maxKey());
         _length += 1;
     }
 
