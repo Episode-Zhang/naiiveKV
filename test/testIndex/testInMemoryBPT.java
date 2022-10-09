@@ -166,15 +166,15 @@ public class testInMemoryBPT {
 
     @Test
     public void testSimpleInsertDeleteWithBuffer3() {
-        BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 6);
+        BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 8);
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         // 插入
-        int[] keys = {47, 80, 53, 63, 77, 71, 78, 92, 0, 0, 69, 76, 63, 21, 44, 15, 23, 82, 45, 26};
+        int[] keys = {-9, 86, -24, 56, -24, -68, 85, 44, 59, -92, 93, -89, 31, 78, 68, -61, 11, 52, -100, -5};
         for (int key : keys) {
             if (index.empty() || greaterThan(key, index.indexRange()._right)) {
                 buffer.put(key, 1);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
-                if (buffer.size() == 4) {
+                if (buffer.size() == 5) {
                     index.write(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
@@ -185,20 +185,43 @@ public class testInMemoryBPT {
         // 剩余非空缓存写入
         if (!buffer.empty()) { index.write(buffer); buffer = new Table<Integer, Integer>(); }
         // 删除
-        assertNull(index.delete(37));
-        assertNull(index.delete(61));
-        assertNull(index.delete(8));
-        assertNull(index.delete(65));
-        assertNull(index.delete(2));
-        assertNull(index.delete(46));
-        assertEquals(1, (int) index.delete(80));
-        assertEquals(1, (int) index.delete(21));
-        assertEquals(1, (int) index.delete(92));
+        assertNull(index.delete(89));
+        assertEquals(1, (int) index.delete(44));
         System.out.println(index.indexView());
     }
 
     @Test
     public void testSimpleInsertDeleteWithBuffer4() {
+        BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 6);
+        Table<Integer, Integer> buffer = new Table<Integer, Integer>();
+        // 插入
+        int[] keys = {-1, 8, -5, 11, 10, 9, 0, 9, 8, 4, -15, -2, 13, -9, 1};
+        int[] values = {1, 3, 10, 1, -6, -5, -8, 13, 4, -14, -3, -6, -9, 4, 2};
+        for (int i = 0; i < 15; i++) {
+            if (index.empty() || greaterThan(keys[i], index.indexRange()._right)) {
+                buffer.put(keys[i], values[i]);
+                // 缓冲区满以后，将内容写入索引区，刷新缓冲.
+                if (buffer.size() == 4) {
+                    index.write(buffer);
+                    buffer = new Table<Integer, Integer>();
+                }
+            } else { // 否则在索引区中相应的表插入记录
+                index.insert(keys[i], values[i]);
+            }
+        }
+        // 剩余非空缓存写入
+        if (!buffer.empty()) { index.write(buffer); buffer = new Table<Integer, Integer>(); }
+        // 删除
+        assertEquals(4, (int) index.delete(8));
+        assertEquals(13, (int) index.delete(9));
+        assertEquals(-9, (int) index.delete(13));
+        assertEquals(-6, (int) index.delete(-2));
+        assertEquals(-14, (int) index.delete(4));
+        System.out.println(index.indexView());
+    }
+
+    @Test
+    public void testSimpleInsertDeleteWithBuffer5() {
         final int BUFFERCAPACITY = 20, M = 4, TABLECAPACITY = 60;
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
@@ -282,15 +305,14 @@ public class testInMemoryBPT {
 
     @Test
     public void testSimpleRandomInsertPutDeleteWithBuffer() {
-        final int BUFFERCAPACITY = 50, M = 4, TABLECAPACITY = 60;
+        final int BUFFERCAPACITY = 4, M = 4, TABLECAPACITY = 6;
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
         TreeMap<Integer, Integer> table = new TreeMap<>();
         // 插入数据
         final int N = (int) 1e3;
         for (int i = 0; i < N; i++) {
-            int key = StdRandom.uniform(0, 100), value = StdRandom.uniform(-100, 100);
-            System.out.printf("(%d, %d)\n", key, value);
+            int key = StdRandom.uniform(-100, 100), value = StdRandom.uniform(-100, 100);
             table.put(key, value);
             // 如果索引区中尚未有数据表或当前记录的键不在索引范围中，将记录存入缓冲区
             if (index.empty() || greaterThan(key, index.indexRange()._right)) {
@@ -308,7 +330,6 @@ public class testInMemoryBPT {
         // 读取与删除
         for (int i = 0; i < N; i++) {
             int key = StdRandom.uniform(-100, 100);
-            System.out.printf("(%d)\n", key);
             assertEquals(table.get(key), index.get(key));
             assertEquals(table.remove(key), index.delete(key)); // 删除
         }
@@ -318,7 +339,7 @@ public class testInMemoryBPT {
 
     @Test
     public void testRandomInsertPutDeleteWithBuffer() {
-        final int BUFFERCAPACITY = 2048, M = 32, TABLECAPACITY = 4096;
+        final int BUFFERCAPACITY = 4096, M = 16, TABLECAPACITY = 6144;
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
         TreeMap<Integer, Integer> table = new TreeMap<>();
@@ -345,11 +366,8 @@ public class testInMemoryBPT {
             int key = StdRandom.uniform(LOWER, UPPER);
             int mode = StdRandom.uniform(0, 2);
             switch (mode) {
-                case 0 -> {
-                    assertEquals(table.get(key), index.get(key));
-                    assertEquals(table.remove(key), index.delete(key)); // 删除
-                }
-                // case 1 -> assertEquals(table.get(key), index.get(key)); // 读取
+                case 0 -> assertEquals(table.remove(key), index.delete(key)); // 删除
+                case 1 -> assertEquals(table.get(key), index.get(key)); // 读取
                 default -> {}
             }
         }

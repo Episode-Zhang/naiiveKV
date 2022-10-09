@@ -33,9 +33,6 @@ public class BPlusTree<K, V> implements Index<K, V> {
     /** B+树中每张表的容量上限因子, 当某张大表达到上限时会将自己分成两张小表. */
     private final double UPPERTHRESHOLD = 0.8;
 
-    /** B+树中每张表的容量下限因子, 当某张表达到下限时会将自己与邻表合并. */
-    private final double LOWERTHRESHOLD = 0.05;
-
     /**
      * B+树的构造函数，需要在初始化时指定B+树的阶以及每张表的容量. 规定B+树的阶至少为4.
      * <p>
@@ -50,15 +47,6 @@ public class BPlusTree<K, V> implements Index<K, V> {
                     Order of B+ tree should at least be 4. Got
                     order: %d
                     """, order);
-            throw new IllegalArgumentException(errorMsg);
-        }
-        if ((int) (LOWERTHRESHOLD * capacity) < 3) {
-            String errorMsg = String.format("""
-                    The dot of LOWERTHRESHOLD and CAPACITY should at least be 3. Got
-                    LOWERTHRESHOLD: %.2f
-                    CAPACITY: %d
-                    dot(in integer): %d
-                    """, LOWERTHRESHOLD, capacity, (int) (LOWERTHRESHOLD * capacity));
             throw new IllegalArgumentException(errorMsg);
         }
         this.M = order;
@@ -107,15 +95,16 @@ public class BPlusTree<K, V> implements Index<K, V> {
         }
         Page<K, V> targetPage = findInsert(_root, key);
         insertRecord(targetPage, key, value);
+        updateIndex(targetPage);
     }
 
     /** 根据键在数据库中查找对应值，若无相关记录则返回null. */
     @Override
     public V get(K key) {
-        if (!_root.blockRange().contains(key)) { return null; }
+        if (_size == 0 || !_root.blockRange().contains(key)) { return null; }
         V value = null;
         Page<K, V> page = find(_root, key);
-        if (page != null) {
+        if (page != null && page.length() > 0) {
             Range<K>[] range = page.subRanges();
             for (int i = 0; i < page.length(); i++) {
                 if (range[i].contains(key)) {
@@ -134,9 +123,12 @@ public class BPlusTree<K, V> implements Index<K, V> {
      */
     @Override
     public V delete(K key) {
-        if (!_root.blockRange().contains(key)) { return null; }
+        if (_size == 0 || !_root.blockRange().contains(key)) { return null; }
         Page<K, V> page = find(_root, key);
-        return page == null ? null : removeKey(page, key);
+        if (page != null && page.length() > 0) {
+            return removeKey(page, key);
+        }
+        return null;
     }
 
     /** 返回索引层级结构. */
@@ -174,7 +166,7 @@ public class BPlusTree<K, V> implements Index<K, V> {
 
     @Override
     public String toString() {
-        if (_size == 0) { return ""; }
+        if (_size == 0) { return "(empty)"; }
         return viewInString(_root, _pages);
     }
 
@@ -343,20 +335,18 @@ public class BPlusTree<K, V> implements Index<K, V> {
                 tablePos = i;
                 V value = targetTable.delete(key);
                 if (value == null) { break; } // 对应表中不存在该记录，直接返回空
-                // 否则，删除可能影响整体的状态，需要检查索引
-                if (range[i]._left != targetTable.minKey() || range[i]._right != targetTable.maxKey()) {
-                    range[i]._left = targetTable.minKey();
-                    range[i]._right = targetTable.maxKey();
-                    int pagePos = page.loc();;
-                    if (page.blockRange() != page.parent().subRanges()[pagePos]) {
-                        updateIndex(page);
+                // 删除键后若当前表空且表的个数大于1，则删除表.
+                if (targetTable.empty()) {
+                    removeTable(page, tablePos);
+                } else { // 否则，删除可能影响整体的状态，需要检查索引
+                    if (range[i]._left != targetTable.minKey() || range[i]._right != targetTable.maxKey()) {
+                        range[i]._left = targetTable.minKey();
+                        range[i]._right = targetTable.maxKey();
+                        int pagePos = page.loc();;
+                        if (page.blockRange() != page.parent().subRanges()[pagePos]) {
+                            updateIndex(page);
+                        }
                     }
-                }
-                // 若当前表小于阈值且有供合并的表
-                int threshold = (int) (LOWERTHRESHOLD * CAPACITY);
-                if (targetTable.size() <= threshold && _size > 1) {
-                    mergeTable(page, tablePos);
-                    removeTable(page, tablePos); // 删除被合并的空表
                 }
                 return value;
             }
@@ -364,39 +354,21 @@ public class BPlusTree<K, V> implements Index<K, V> {
         return null;
     }
 
-    /**
-     * 将容量小于阈值的表与其兄弟进行合并. 并删除被合并的表.
-     * 根据B+树的性质，可以保证，除当前页数为1的情况下(此时根节点“直连”该页，该页的表数可以为1)，
-     * 每页的表数均不小于 M/2(>= 2).
-     * @param page 合并发生页.
-     * @param tablePos 小于阈值并将要发生合并的表所在的位置.
-     */
-    private void mergeTable(Page<K, V> page, int tablePos) {
-        Table<K, V> table = (Table<K, V>) page.get(tablePos);
-        Table<K, V> sibling;
-        int siblingPos;
-        // 寻找table的兄弟：除非待合并table为首项，否则兄弟总是左侧的
-        if (tablePos == 0) {
-            siblingPos = tablePos + 1;
-            sibling = (Table<K, V>) page.get(siblingPos);
-        } else {
-            siblingPos = tablePos - 1;
-            sibling = (Table<K, V>) page.get(siblingPos); }
-        // 将table同兄弟合并
-        sibling.merge(table);
-        page.setRange(siblingPos, new Range<>(sibling.minKey(), sibling.maxKey()));
-    }
-
     /** 将一张表从给定的页的指定位置中删除. */
     private void removeTable(Page<K, V> page, int pos) {
         page.removeAt(pos); // 删除表
+        _size -= 1;
         // 页中表的个数大于等于 M/2，更新上级索引，直接返回
         if (page.length() >= this.M / 2) {
             updateIndex(page);
             return;
         }
-        // 小于 M/2，请求前驱/后继或合并
+        // 小于 M/2，根据是否在根处，直接删除or请求前驱/后继或合并
         IndexBlock<K> parent = page.parent();
+        // 无兄弟可以请求数据项，直接返回
+        if (parent.length() == 1) {
+            return;
+        }
         Page<K, V> sibling;
         // 除非当前页已是上级索引中的最后一块，否则兄弟页总是位于右侧.
         if (page.loc() < parent.length() - 1) {
@@ -416,6 +388,7 @@ public class BPlusTree<K, V> implements Index<K, V> {
             // 向兄弟请求前驱页
             if (sibling.length() > this.M / 2) {
                 movePredecessor(page, sibling);
+                updateIndex(page);
             } else { // 将当前页向兄弟合并
                 mergeBlock(sibling, page);
                 _pages.remove(page);
@@ -476,6 +449,10 @@ public class BPlusTree<K, V> implements Index<K, V> {
         }
         // 检查父结点数据项少于 M/2，视情况向兄弟请求数据项或合并
         IndexBlock<K> grandparent = parent.parent();
+        // 此时无兄弟结点可以请求数据，示其到根节点的深度决定是否删除
+        if (grandparent.length() == 1) {
+            return;
+        }
         IndexBlock<K> sibling;
         // 检查父结点的sibling吗，总是取右侧的兄弟，除非本身已是最右侧
         if (parent.loc() < grandparent.length() - 1) {

@@ -35,16 +35,6 @@ public class testTable {
     }
 
     @Test
-    public void testOneRecordTableWithMerge() throws RuntimeException {
-        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
-        Table<Integer, Integer> another = new Table<Integer, Integer>();
-        myTable.put(12, 34);
-        System.out.println(myTable);
-        another.merge(myTable);
-        System.out.println(another);
-    }
-
-    @Test
     public void testTwoRecordsTableWithSplit() throws RuntimeException {
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
         // 没有“左半边”
@@ -52,18 +42,6 @@ public class testTable {
         myTable.put(34, 12);
         System.out.println(myTable);
         System.out.println(myTable.split());
-    }
-
-    @Test
-    public void testTwoRecordsTableWithMerge() throws RuntimeException {
-        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
-        Table<Integer, Integer> another = new Table<Integer, Integer>();
-        myTable.put(12, 34);
-        another.put(34, 12);
-        System.out.println(myTable);
-        System.out.println(another);
-        myTable.merge(another);
-        System.out.println(myTable);
     }
 
     @Test
@@ -78,18 +56,6 @@ public class testTable {
     }
 
     @Test
-    public void testThreeRecordsTableWithMerge()  {
-        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
-        Table<Integer, Integer> another = new Table<Integer, Integer>();
-        myTable.put(12, 34);
-        another.put(34, 12);
-        another.put(13, 4);
-        System.out.println(myTable);
-        System.out.println(another);
-        myTable.merge(another);
-        System.out.println(myTable);
-    }
-    @Test
     public void testSimpleSplitMerge1() {
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
         myTable.put(2, 1);
@@ -99,35 +65,6 @@ public class testTable {
         myTable.put(8, 1);
         Table<Integer, Integer> rightSide = myTable.split();
         System.out.println(rightSide);
-    }
-
-    @Test
-    public void testSimpleSplitMerge() {
-        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
-        myTable.put(-97, -11);
-        myTable.put(-15, -44);
-        myTable.put(41, 96);
-        myTable.put(94, 53);
-        myTable.put(-92, 20);
-        myTable.put(-98, -21);
-        myTable.put(58, -6);
-        myTable.put(-69, 54);
-        myTable.put(-53, -48);
-        myTable.put(-73, -13);
-        myTable.put(44, -10);
-        myTable.put(-31, -36);
-        myTable.put(80, -90);
-        myTable.put(96, -74);
-        myTable.put(30, 49);
-        myTable.put(-9, -76);
-        myTable.put(86, -85);
-        myTable.put(-67, -7);
-        myTable.put(81, -16);
-        Table<Integer, Integer> split = myTable.split();
-        System.out.println(Arrays.asList(split.keys()));
-        System.out.println(Arrays.asList(split.values()));
-        split.merge(myTable);
-        System.out.println(split);
     }
 
     @Test
