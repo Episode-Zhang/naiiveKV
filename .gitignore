@@ -4,3 +4,5 @@ out/
 .idea/
 # demo
 src/demo.java
+# 序列化后的数据表文件夹
+data/
