@@ -1,21 +1,24 @@
 package KVTable;
 
 import static Utils.Utils.*;
+import java.io.Serializable;
 
 /**
  * 实现了KVTable所有接口的红黑树.
+ * 1.1在原版的基础上支持了红黑树的序列化与反序列化存储
+ *
  * @param <K> K-V表中键的类型.
  * @param <V> K-V表中值的类型.
  * @author Episode-Zhang
- * @version 1.0
+ * @version 1.1
  */
-public class RBT<K, V> implements KVTable<K, V> {
+public class RBT<K, V> implements KVTable<K, V>, Serializable {
 
     /** 红黑树的根结点. */
     protected RBTNode<K, V> _root;
 
     /** 作为哨兵，红黑树的叶子结点以及树根的父节点默认为黑色的NIL. */
-    protected final RBTNode<K, V> NIL;
+    protected RBTNode<K, V> NIL;
 
     /** 结点个数. */
     protected int _size;

@@ -5,29 +5,40 @@ import static Utils.Utils.*;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.function.Function;
+import java.io.*;
 
 /**
  * 继承了红黑树K-V表，并且缓存了最大/最小键，支持在原有红黑树基础上对分重构的K-V表.
+ * 1.1在原版的基础上其父类RBT支持了序列化与反序列化存储
  * <p>
  * 用于适配类 {@link Index.Page} 中存储的K-V表的要求.
  * @param <K> K-V表中键的类型.
  * @param <V> K-V表中值的类型.
  * @author Episode-Zhang
- * @version 1.0
+ * @version 1.1
  */
 public class Table<K, V> extends RBT<K, V> {
 
-    /** 存放当前表中最大的key. */
+    /** 存放当前表中最小的key. */
     private K _minKey;
 
     /** 存放当前表中最大的key. */
     private K _maxKey;
 
+    /** 存放当前表对应的文件名，规则：文件名 = this.hashCode().bin */
+    private final String _filename;
+
     /** 默认构造函数. */
-    public Table() { super(); }
+    public Table() {
+        super();
+        _filename = String.format("%s.table", this.hashCode());
+    }
 
     /** 用一棵已知的结点表示的红黑树来初始化一张表. */
-    private Table(RBTNode<K, V> root, RBTNode<K, V> NIL, int rootSize) { super(root, NIL, rootSize); }
+    private Table(RBTNode<K, V> root, RBTNode<K, V> NIL, int rootSize) {
+        super(root, NIL, rootSize);
+        _filename = String.format("%s.bin", this.hashCode());
+    }
 
     /** 获取当前表中键的最小值. */
     public K minKey() { return _minKey; }
@@ -119,6 +130,43 @@ public class Table<K, V> extends RBT<K, V> {
             view.append("...(Rest of the records are hidden)\n");
         }
         return view.toString();
+    }
+
+    /**
+     * 关闭当前Table，将Table中所有的K-V对写入项目根路径下的data目录，随后将root置空.
+     * @throws IOException 发生IO异常时抛出.
+     */
+    public void close () throws IOException {
+        // 写入磁盘
+        String path = String.format("./data/%s", _filename);
+        try(FileOutputStream fos = new FileOutputStream(path);
+            ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+            oos.writeObject(this);
+            oos.flush();
+        }
+        // 置空root
+        this._root = null;
+    }
+
+    /**
+     * 打开当前的Table，将Table中所有的K-V对从根路径的data目录中对应的文件加载回内存里.
+     * @throws IOException 发生IO异常时抛出.
+     * @throws ClassNotFoundException 发生类加载异常时抛出.
+     */
+    public void open() throws IOException, ClassNotFoundException {
+        Table<K, V> inDiskTable;
+        String path = String.format("./data/%s", _filename);
+        try (FileInputStream fis = new FileInputStream(path);
+             ObjectInputStream ois = new ObjectInputStream(fis)) {
+            inDiskTable = (Table<K, V>) ois.readObject();
+        }
+        _root = inDiskTable._root;
+        NIL = inDiskTable.NIL;
+    }
+
+    /** 判断根节点是否为空 */
+    public boolean nullRoot() {
+        return _root == null;
     }
 
     /** 获取以{@code start} 为根节点的树中的最小键. */

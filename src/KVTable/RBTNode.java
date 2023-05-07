@@ -1,12 +1,17 @@
 package KVTable;
 
-/** 红黑树结点类. 作用域为 {@link KVTable}
+import java.io.Serializable;
+
+/**
+ * 红黑树结点类. 作用域为 {@link KVTable}
+ * 1.1在原版的基础上支持了结点的序列化与反序列化存储
+ *
  * @param <K> 红黑树结点存放的键的类型
  * @param <V> 红黑树结点存放的值的类型
  * @author Episode-Zhang
- * @version 1.0
+ * @version 1.1
  */
-class RBTNode<K, V> {
+class RBTNode<K, V> implements Serializable {
     /** 存放键. */
     public K _key;
 

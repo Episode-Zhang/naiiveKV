@@ -5,6 +5,8 @@ import static org.junit.Assert.*;
 import edu.princeton.cs.algs4.StdRandom;
 
 import KVTable.*;
+
+import java.io.IOException;
 import java.util.TreeMap;
 import java.util.Arrays;
 import static java.util.Collections.max;
@@ -99,6 +101,23 @@ public class testTable {
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
         System.out.println(Arrays.asList((Object[]) myTable.keys(114514)));
         System.out.println(Arrays.asList((Object[]) myTable.values(114514)));
+    }
+
+    @Test
+    public void testSimpleFileIO() throws IOException, ClassNotFoundException {
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        int n = 10;
+        for (int i = 0; i < n; i++) {
+            int key = StdRandom.uniform(LOWER, UPPER);
+            int value = StdRandom.uniform(LOWER, UPPER);
+            myTable.put(key, value);
+        }
+        String beforeWrite = myTable.toString();
+        myTable.close();
+        assertTrue(myTable.nullRoot());
+        myTable.open();
+        String AfterWrite = myTable.toString();
+        assertEquals(beforeWrite, AfterWrite);
     }
 
     @Test
@@ -235,6 +254,57 @@ public class testTable {
         assertEquals(max(officialTable.keySet()), myTable.maxKey());
         System.out.println(myTable);
         System.out.println("测试完成");
+    }
+
+    @Test
+    public void testRandomPutGetContainsDeleteWithFileIO() throws IOException, ClassNotFoundException {
+        final int N = (int) 1e3; // 每次都要读写磁盘的话性能下降得十分厉害
+        Table<Integer, Integer> myTable = new Table<Integer, Integer>();
+        myTable.close();
+        TreeMap<Integer, Integer> officialTable = new TreeMap<>();
+        System.out.println("测试随机化插入，读取，查询，删除，所有的操作均需要读写磁盘");
+        for (int i = 0; i < N; i++) {
+            int ops = StdRandom.uniform(0, 4); // 生成均匀分布下的0-1随机数
+            int key = StdRandom.uniform(LOWER, UPPER);
+            int value = StdRandom.uniform(LOWER, UPPER);
+            switch (ops) {
+                case 0 -> {
+                    // 存入
+                    myTable.open();
+                    myTable.put(key, value);
+                    officialTable.put(key, value);
+                    assertEquals(officialTable.size(), myTable.size());
+                    myTable.close();
+                }
+                case 1 -> {
+                    // 读取
+                    myTable.open();
+                    assertEquals(officialTable.get(key), myTable.get(key));
+                    myTable.close();
+                }
+                case 2 -> {
+                    // 查询
+                    myTable.open();
+                    assertEquals(officialTable.containsKey(key), myTable.contains(key));
+                    myTable.close();
+                }
+                case 3 -> {
+                    // 删除
+                    myTable.open();
+                    assertEquals(officialTable.remove(key), myTable.delete(key));
+                    assertEquals(officialTable.size(), myTable.size());
+                    myTable.close();
+                }
+                default -> {
+                }
+            }
+        }
+        myTable.open();
+        assertEquals(min(officialTable.keySet()), myTable.minKey());
+        assertEquals(max(officialTable.keySet()), myTable.maxKey());
+        System.out.println(myTable);
+        System.out.println("测试完成");
+        myTable.close();
     }
 
     @Test
