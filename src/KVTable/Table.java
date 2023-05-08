@@ -25,7 +25,7 @@ public class Table<K, V> extends RBT<K, V> {
     /** 存放当前表中最大的key. */
     private K _maxKey;
 
-    /** 存放当前表对应的文件名，规则：文件名 = this.hashCode().bin */
+    /** 存放当前表对应的文件名，规则：文件名 = this.hashCode().table */
     private final String _filename;
 
     /** 默认构造函数. */
@@ -37,7 +37,7 @@ public class Table<K, V> extends RBT<K, V> {
     /** 用一棵已知的结点表示的红黑树来初始化一张表. */
     private Table(RBTNode<K, V> root, RBTNode<K, V> NIL, int rootSize) {
         super(root, NIL, rootSize);
-        _filename = String.format("%s.bin", this.hashCode());
+        _filename = String.format("%s.table", this.hashCode());
     }
 
     /** 获取当前表中键的最小值. */
