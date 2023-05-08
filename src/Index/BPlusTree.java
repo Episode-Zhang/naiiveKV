@@ -3,6 +3,8 @@ package Index;
 import static Utils.Utils.*;
 import KVTable.Table;
 import static View.BPTView.*;
+
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -60,21 +62,31 @@ public class BPlusTree<K, V> implements Index<K, V> {
     @Override
     public int size() { return _size; }
 
-    /** 判断并返回当前索引区是否为空. */
-    public boolean empty() { return _size == 0; }
-
     /** 返回当前B+树的顶级索引范围. */
+    @Override
     public Range<K> indexRange() { return _root.blockRange(); }
 
     /**
-     * 将缓冲区中达到阈值的表写入索引区.
+     * 将缓冲区中达到阈值的表写入索引区(内存环境).
      * @param fullTable 缓冲区中达到阈值的KV表.
      */
-    @Override
-    public void write(Table<K, V> fullTable) {
+    public void writeInMemory(Table<K, V> fullTable) throws IOException {
         // 新表总是在末尾追加.
         Page<K, V> tailPage = _pages.get(_pages.size() - 1);
         insertTable(tailPage, tailPage.length(), fullTable);
+    }
+
+    /**
+     * 将缓冲区中达到阈值的表写入索引区(内存-磁盘).
+     * @param fullTable 缓冲区中达到阈值的KV表.
+     */
+    @Override
+    public void write(Table<K, V> fullTable) throws IOException {
+        // 新表总是在末尾追加.
+        Page<K, V> tailPage = _pages.get(_pages.size() - 1);
+        insertTable(tailPage, tailPage.length(), fullTable);
+        // 关闭已经写入的表
+        fullTable.close();
     }
 
     /**

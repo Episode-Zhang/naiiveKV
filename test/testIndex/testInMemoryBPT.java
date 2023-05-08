@@ -7,6 +7,8 @@ import edu.princeton.cs.algs4.StdRandom;
 import static Utils.Utils.*;
 import Index.BPlusTree;
 import KVTable.Table;
+
+import java.io.IOException;
 import java.util.TreeMap;
 
 public class testInMemoryBPT {
@@ -28,40 +30,40 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testAddTableWithOneSplit() {
+    public void testAddTableWithOneSplit() throws IOException {
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, CAPACITY);
         // 插入4张表
-        Table<Integer, Integer> t1 = generate(1, 10); index.write(t1);
-        Table<Integer, Integer> t2 = generate(11, 20); index.write(t2);
-        Table<Integer, Integer> t3 = generate(21, 30); index.write(t3);
-        Table<Integer, Integer> t4 = generate(31, 40); index.write(t4);
+        Table<Integer, Integer> t1 = generate(1, 10); index.writeInMemory(t1);
+        Table<Integer, Integer> t2 = generate(11, 20); index.writeInMemory(t2);
+        Table<Integer, Integer> t3 = generate(21, 30); index.writeInMemory(t3);
+        Table<Integer, Integer> t4 = generate(31, 40); index.writeInMemory(t4);
         assertEquals(4, index.size());
         System.out.println(index);
     }
 
     @Test
-    public void testAddTableWithTwoSplits() {
+    public void testAddTableWithTwoSplits() throws IOException {
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, CAPACITY);
         // 插入4张表
-        Table<Integer, Integer> t1 = generate(1, 10); index.write(t1);
-        Table<Integer, Integer> t2 = generate(11, 20); index.write(t2);
-        Table<Integer, Integer> t3 = generate(21, 30); index.write(t3);
-        Table<Integer, Integer> t4 = generate(31, 40); index.write(t4);
-        Table<Integer, Integer> t5 = generate(41, 50); index.write(t5);
-        Table<Integer, Integer> t6 = generate(51, 60); index.write(t6);
-        Table<Integer, Integer> t7 = generate(61, 70); index.write(t7);
-        Table<Integer, Integer> t8 = generate(71, 80); index.write(t8);
+        Table<Integer, Integer> t1 = generate(1, 10); index.writeInMemory(t1);
+        Table<Integer, Integer> t2 = generate(11, 20); index.writeInMemory(t2);
+        Table<Integer, Integer> t3 = generate(21, 30); index.writeInMemory(t3);
+        Table<Integer, Integer> t4 = generate(31, 40); index.writeInMemory(t4);
+        Table<Integer, Integer> t5 = generate(41, 50); index.writeInMemory(t5);
+        Table<Integer, Integer> t6 = generate(51, 60); index.writeInMemory(t6);
+        Table<Integer, Integer> t7 = generate(61, 70); index.writeInMemory(t7);
+        Table<Integer, Integer> t8 = generate(71, 80); index.writeInMemory(t8);
         assertEquals(8, index.size());
         System.out.println(index);
     }
 
     @Test
-    public void testSimpleInsert() {
+    public void testSimpleInsert() throws IOException {
         Table<Integer, Integer> t1 = new Table<Integer, Integer>();
         t1.put(1, -1); t1.put(100, 1);
         // 初始化索引 插入表
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, 6);
-        index.write(t1);
+        index.writeInMemory(t1);
         index.insert(37, -50);
         index.insert(79, -10);
         index.insert(73, 3);
@@ -83,7 +85,7 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testSimpleInsertWithBuffer() {
+    public void testSimpleInsertWithBuffer() throws IOException {
         final int BUFFERCAPACITY = 5;
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(6, 12);
@@ -95,7 +97,7 @@ public class testInMemoryBPT {
                 buffer.put(key, 1);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
                 if (buffer.size() == BUFFERCAPACITY) {
-                    index.write(buffer);
+                    index.writeInMemory(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
             } else { // 否则在索引区中相应的表插入记录
@@ -107,7 +109,7 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testSimpleInsertDeleteWithBuffer1() {
+    public void testSimpleInsertDeleteWithBuffer1() throws IOException {
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 6);
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         // 插入
@@ -117,7 +119,7 @@ public class testInMemoryBPT {
                 buffer.put(key, 1);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
                 if (buffer.size() == 4) {
-                    index.write(buffer);
+                    index.writeInMemory(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
             } else { // 否则在索引区中相应的表插入记录
@@ -125,14 +127,14 @@ public class testInMemoryBPT {
             }
         }
         // 剩余非空缓存写入
-        if (!buffer.empty()) { index.write(buffer); buffer = new Table<Integer, Integer>(); }
+        if (!buffer.empty()) { index.writeInMemory(buffer); buffer = new Table<Integer, Integer>(); }
         // 删除
         assertNull(index.delete(66));
         assertEquals(1, (int) index.delete(11));
     }
 
     @Test
-    public void testSimpleInsertDeleteWithBuffer2() {
+    public void testSimpleInsertDeleteWithBuffer2() throws IOException {
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 6);
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         // 插入
@@ -142,7 +144,7 @@ public class testInMemoryBPT {
                 buffer.put(key, 1);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
                 if (buffer.size() == 4) {
-                    index.write(buffer);
+                    index.writeInMemory(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
             } else { // 否则在索引区中相应的表插入记录
@@ -150,7 +152,7 @@ public class testInMemoryBPT {
             }
         }
         // 剩余非空缓存写入
-        if (!buffer.empty()) { index.write(buffer); buffer = new Table<Integer, Integer>(); }
+        if (!buffer.empty()) { index.writeInMemory(buffer); buffer = new Table<Integer, Integer>(); }
         // 删除
         assertNull(index.delete(26));
         assertNull(index.delete(83));
@@ -165,7 +167,7 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testSimpleInsertDeleteWithBuffer3() {
+    public void testSimpleInsertDeleteWithBuffer3() throws IOException {
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 8);
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         // 插入
@@ -175,7 +177,7 @@ public class testInMemoryBPT {
                 buffer.put(key, 1);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
                 if (buffer.size() == 5) {
-                    index.write(buffer);
+                    index.writeInMemory(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
             } else { // 否则在索引区中相应的表插入记录
@@ -183,7 +185,7 @@ public class testInMemoryBPT {
             }
         }
         // 剩余非空缓存写入
-        if (!buffer.empty()) { index.write(buffer); buffer = new Table<Integer, Integer>(); }
+        if (!buffer.empty()) { index.writeInMemory(buffer); buffer = new Table<Integer, Integer>(); }
         // 删除
         assertNull(index.delete(89));
         assertEquals(1, (int) index.delete(44));
@@ -191,7 +193,7 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testSimpleInsertDeleteWithBuffer4() {
+    public void testSimpleInsertDeleteWithBuffer4() throws IOException {
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(4, 6);
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         // 插入
@@ -202,7 +204,7 @@ public class testInMemoryBPT {
                 buffer.put(keys[i], values[i]);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
                 if (buffer.size() == 4) {
-                    index.write(buffer);
+                    index.writeInMemory(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
             } else { // 否则在索引区中相应的表插入记录
@@ -210,7 +212,7 @@ public class testInMemoryBPT {
             }
         }
         // 剩余非空缓存写入
-        if (!buffer.empty()) { index.write(buffer); buffer = new Table<Integer, Integer>(); }
+        if (!buffer.empty()) { index.writeInMemory(buffer); buffer = new Table<Integer, Integer>(); }
         // 删除
         assertEquals(4, (int) index.delete(8));
         assertEquals(13, (int) index.delete(9));
@@ -221,7 +223,7 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testSimpleInsertDeleteWithBuffer5() {
+    public void testSimpleInsertDeleteWithBuffer5() throws IOException {
         final int BUFFERCAPACITY = 20, M = 4, TABLECAPACITY = 60;
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
@@ -239,21 +241,20 @@ public class testInMemoryBPT {
                 -73, -3, 20, -19, -40, 7, 64, -27, 30, 0,
                 -65, -29, -61, -24, 53, -46, -63, 73, 85, 83};
         for (int i = 0; i < N; i++) {
-            //System.out.printf("(%d, %d)\n", key, value);
             table.put(keys[i], values[i]);
             // 如果索引区中尚未有数据表或当前记录的键不在索引范围中，将记录存入缓冲区
             if (index.empty() || greaterThan(keys[i], index.indexRange()._right)) {
                 buffer.put(keys[i], values[i]);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
                 if (buffer.size() == BUFFERCAPACITY) {
-                    index.write(buffer);
+                    index.writeInMemory(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
             } else { // 否则在索引区中相应的表插入记录
                 index.insert(keys[i], values[i]);
             }
         }
-        if (!buffer.empty()) { index.write(buffer); }
+        if (!buffer.empty()) { index.writeInMemory(buffer); }
         // 删除
         assertEquals(table.remove(56), index.delete(56));
         assertEquals(table.remove(96), index.delete(96));
@@ -263,12 +264,12 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testRandomInsert() {
+    public void testRandomInsert() throws IOException {
         Table<Integer, Integer> t1 = new Table<Integer, Integer>();
         t1.put(LOWER, -1); t1.put(UPPER, 1);
         // 初始化索引 插入表
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(10, 1000);
-        index.write(t1);
+        index.writeInMemory(t1);
         final int N = (int) 1e7;
         for (int i = 0; i < N; i++) {
             int key = StdRandom.uniform(LOWER, UPPER);
@@ -279,7 +280,7 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testRandomInsertWithBuffer() {
+    public void testRandomInsertWithBuffer() throws IOException {
         final int BUFFERCAPACITY = 2048, M = 32, TABLECAPACITY = 4096;
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
@@ -292,7 +293,7 @@ public class testInMemoryBPT {
                 buffer.put(key, value);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
                 if (buffer.size() == BUFFERCAPACITY) {
-                    index.write(buffer);
+                    index.writeInMemory(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
             } else { // 否则在索引区中相应的表插入记录
@@ -304,7 +305,7 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testSimpleRandomInsertPutDeleteWithBuffer() {
+    public void testSimpleRandomInsertPutDeleteWithBuffer() throws IOException {
         final int BUFFERCAPACITY = 4, M = 4, TABLECAPACITY = 6;
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
@@ -319,14 +320,14 @@ public class testInMemoryBPT {
                 buffer.put(key, value);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
                 if (buffer.size() == BUFFERCAPACITY) {
-                    index.write(buffer);
+                    index.writeInMemory(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
             } else { // 否则在索引区中相应的表插入记录
                 index.insert(key, value);
             }
         }
-        if (!buffer.empty()) { index.write(buffer); }
+        if (!buffer.empty()) { index.writeInMemory(buffer); }
         // 读取与删除
         for (int i = 0; i < N; i++) {
             int key = StdRandom.uniform(-100, 100);
@@ -338,7 +339,7 @@ public class testInMemoryBPT {
     }
 
     @Test
-    public void testRandomInsertPutDeleteWithBuffer() {
+    public void testRandomInsertPutDeleteWithBuffer() throws IOException {
         final int BUFFERCAPACITY = 4096, M = 16, TABLECAPACITY = 6144;
         Table<Integer, Integer> buffer = new Table<Integer, Integer>();
         BPlusTree<Integer, Integer> index = new BPlusTree<Integer, Integer>(M, TABLECAPACITY);
@@ -353,14 +354,14 @@ public class testInMemoryBPT {
                 buffer.put(key, value);
                 // 缓冲区满以后，将内容写入索引区，刷新缓冲.
                 if (buffer.size() == BUFFERCAPACITY) {
-                    index.write(buffer);
+                    index.writeInMemory(buffer);
                     buffer = new Table<Integer, Integer>();
                 }
             } else { // 否则在索引区中相应的表插入记录
                 index.insert(key, value);
             }
         }
-        if (!buffer.empty()) { index.write(buffer); }
+        if (!buffer.empty()) { index.writeInMemory(buffer); }
         // 读取与删除
         for (int i = 0; i < N; i++) {
             int key = StdRandom.uniform(LOWER, UPPER);
