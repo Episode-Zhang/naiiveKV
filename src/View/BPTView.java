@@ -1,13 +1,10 @@
 package View;
 
-import Index.Block;
-import Index.Page;
-import Index.IndexBlock;
-import Index.Range;
+import Index.*;
 import java.util.List;
 
 /**
- * 绘制B+树{@link Index.BPlusTree}的视图.
+ * 绘制B+树{@link BPlusTree}的视图.
  * @author Episode-Zhang
  * @version 1.0
  */
