@@ -163,6 +163,25 @@ public class InMemBPlusTree<K, V> implements Index<K, V> {
         return targetPage.tables()[pos].toString();
     }
 
+    /**
+     * 返回给定页id中指定位置的数据表的视图.
+     * @param tableName 待查看视图的数据表的表名.
+     * @return 请求的数据表的视图.
+     */
+    @Override
+    public String tableView(String tableName) {
+        // TODO 赶工求快两次For循环，其实add table的时候维护一张TableName与对应(pageid, pos)的哈希表就行了，这样可以去掉外层复杂度
+        for (Page<K, V> page : _pages) {
+            for (Table<K, V> table : page.tables()) {
+                if (table.name().equals(tableName)) {
+                    return table.toString();
+                }
+            }
+        }
+        // 未命中
+        return "该表不存在，请检查表名！";
+    }
+
     @Override
     public String toString() {
         if (_size == 0) { return "(empty)"; }

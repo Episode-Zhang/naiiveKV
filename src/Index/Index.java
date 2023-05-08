@@ -39,4 +39,6 @@ public interface Index<K, V>  {
 
     /** 返回某张数据表的视图. */
     String tableView(int pageId, int tableId);
+
+    String tableView(String tableName) throws IOException, ClassNotFoundException;
 }
