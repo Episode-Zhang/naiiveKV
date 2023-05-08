@@ -46,6 +46,7 @@ public class Table<K, V> extends RBT<K, V> {
     /** 获取当前表中键的最大值. */
     public K maxKey() { return _maxKey; }
 
+    public String name() { return _filename; }
     @Override
     public void put(K key, V value) {
         // 检查新插入的key
