@@ -7,14 +7,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 /**
- * 用于为磁盘上的K-V表提供多级索引结构的B+树.
+ * 用于为内存上的K-V表提供多级索引结构的B+树.
  * <p>
  * @param <K> 对应外部结点所存放的，K-V表中的键的类型.
  * @param <V> 对应外部结点所存放的，K-V表中的值的类型.
  * @author Episode-Zhang
  * @version 1.0
  */
-public class BPlusTree<K, V> implements Index<K, V> {
+public class InMemBPlusTree<K, V> implements Index<K, V> {
 
     /** B+树底层是若干个页组成的一根链表. */
     private final ArrayList<Page<K, V>> _pages;
@@ -42,7 +42,7 @@ public class BPlusTree<K, V> implements Index<K, V> {
      * @param capacity 每张表的最大容量，超过这个值的80%时会发生表内分裂.
      * @throws IllegalArgumentException 如果当前B+树的阶小于4时.
      */
-    public BPlusTree(int order, int capacity) {
+    public InMemBPlusTree(int order, int capacity) {
         if (order < 4) {
             String errorMsg = String.format("""
                     Order of B+ tree should at least be 4. Got
@@ -66,26 +66,24 @@ public class BPlusTree<K, V> implements Index<K, V> {
     public Range<K> indexRange() { return _root.blockRange(); }
 
     /**
-     * 将缓冲区中达到阈值的表写入索引区(内存-磁盘).
+     * 将缓冲区中达到阈值的表写入索引区(内存环境).
      * @param fullTable 缓冲区中达到阈值的KV表.
      */
     @Override
-    public void write(Table<K, V> fullTable) throws IOException {
+    public void write(Table<K, V> fullTable) {
         // 新表总是在末尾追加.
         Page<K, V> tailPage = _pages.get(_pages.size() - 1);
         insertTable(tailPage, tailPage.length(), fullTable);
-        // 关闭已经写入的表
-        fullTable.close();
     }
 
     /**
-     * 插入一条记录. 可以认为记录的键一定在B+树的索引范围内(内存-磁盘).
+     * 插入一条记录. 可以认为记录的键一定在B+树的索引范围内(内存中).
      * @param key 待插入记录的键.
      * @param value 待插入记录的值.
      * @throws IllegalArgumentException 如果当前键在B+树索引区间的右侧.
      */
     @Override
-    public void insert(K key, V value) throws IOException, ClassNotFoundException {
+    public void insert(K key, V value) {
         if (greaterThan(key, _root.blockRange()._right)) {
             String errorMsg = String.format("""
                     The key is at the right side of the index range, and should be inserted into buffer.
@@ -101,7 +99,7 @@ public class BPlusTree<K, V> implements Index<K, V> {
 
     /** 根据键在数据库中查找对应值，若无相关记录则返回null. */
     @Override
-    public V get(K key) throws IOException, ClassNotFoundException {
+    public V get(K key) {
         if (_size == 0 || !_root.blockRange().contains(key)) { return null; }
         V value = null;
         Page<K, V> page = find(_root, key);
@@ -110,11 +108,7 @@ public class BPlusTree<K, V> implements Index<K, V> {
             for (int i = 0; i < page.length(); i++) {
                 if (range[i].contains(key)) {
                     Table<K, V> targetTable = (Table<K, V>) page.get(i);
-                    // 打开数据表
-                    targetTable.open();
                     value = targetTable.get(key);
-                    // 关闭数据表
-                    targetTable.close();
                 }
             }
         }
@@ -127,7 +121,7 @@ public class BPlusTree<K, V> implements Index<K, V> {
      * @return 删除掉的记录中的值. 如果对应记录不存在，则返回null.
      */
     @Override
-    public V delete(K key) throws IOException, ClassNotFoundException {
+    public V delete(K key) {
         if (_size == 0 || !_root.blockRange().contains(key)) { return null; }
         Page<K, V> page = find(_root, key);
         if (page != null && page.length() > 0) {
@@ -226,31 +220,19 @@ public class BPlusTree<K, V> implements Index<K, V> {
         _root.add(newPage);
     }
 
-    /**
-     * 在对应页中插入记录. 非分裂表内的插入不会影响已有索引的信息，若产生了表内分裂，则需要更新索引(内存-磁盘).
-     * @param page 记录索引对应的页
-     * @param key 待存入记录的键
-     * @param value 待存入记录的值
-     * @throws IOException 当写入失败时抛出
-     * @throws ClassNotFoundException 当写入失败时抛出
-     */
-    private void insertRecord(Page<K, V> page, K key, V value) throws IOException, ClassNotFoundException {
+    /** 在对应页中插入记录. 非分裂表内的插入不会影响已有索引的信息，若产生了表内分裂，则需要更新索引(内存中). */
+    private void insertRecord(Page<K, V> page, K key, V value) {
         Range<K>[] ranges = page.subRanges();
         for (int i = 0; i < page.length(); i++) {
             if (ranges[i].contains(key) || lessThan(key, ranges[i]._left)) {
                 // 打开表，插入记录
                 Table<K, V> target = (Table<K, V>) page.get(i);
-                target.open();
                 target.put(key,value);
                 // 检查表是否需要分裂
                 if (target.size() >= UPPERTHRESHOLD * CAPACITY) {
                     Table<K, V> split = target.split();
                     insertTable(page, i + 1, split);
-                    // 关闭分裂后加入的表
-                    split.close();
                 }
-                // 写回数据后关闭表
-                target.close();
                 // 更新表索引
                 ranges[i] = new Range<>(target.minKey(), target.maxKey());
                 break;
@@ -259,7 +241,7 @@ public class BPlusTree<K, V> implements Index<K, V> {
     }
 
     /** 在底层对应页的对应位置中加入新的表. */
-    private void insertTable(Page<K, V> page, int pos, Table<K, V> table) throws IOException {
+    private void insertTable(Page<K, V> page, int pos, Table<K, V> table) {
         page.addAt(table, pos);
         _size += 1;
         // 页内分裂，将分裂出来的页加入链表，在父节点添加新的索引.
@@ -343,18 +325,14 @@ public class BPlusTree<K, V> implements Index<K, V> {
 
 
     /** 在给定表中删除给定键对应的记录，返回值，若无相关记录则返回null. */
-    private V removeKey(Page<K, V> page, K key) throws IOException, ClassNotFoundException {
+    private V removeKey(Page<K, V> page, K key) {
         Range<K>[] range = page.subRanges();
         int tablePos;
         for (int i = 0; i < page.length(); i++) {
             if (range[i].contains(key)) {
                 Table<K, V> targetTable = (Table<K, V>) page.get(i);
-                // 打开表
-                targetTable.open();
                 tablePos = i;
                 V value = targetTable.delete(key);
-                // 关闭表
-                targetTable.close();
                 if (value == null) { break; } // 对应表中不存在该记录，直接返回空
                 // 删除键后若当前表空且表的个数大于1，则删除表.
                 if (targetTable.empty()) {

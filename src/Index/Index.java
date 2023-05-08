@@ -1,7 +1,7 @@
 package Index;
 
 import KVTable.Table;
-import Index.Range;
+
 import java.io.IOException;
 
 /**
@@ -23,13 +23,13 @@ public interface Index<K, V>  {
     void write(Table<K, V> table) throws IOException;
 
     /** 将给定的 K-V 对插入到对应的表中 */
-    void insert(K key, V value);
+    void insert(K key, V value) throws IOException, ClassNotFoundException;
 
     /** 返回 key 对应的值. */
-    V get(K key);
+    V get(K key) throws IOException, ClassNotFoundException;
 
     /** 删除给定键对应的记录. */
-    V delete(K key);
+    V delete(K key) throws IOException, ClassNotFoundException;
 
     /** 返回整个索引区的范围 */
     Range<K> indexRange();
