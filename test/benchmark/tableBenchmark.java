@@ -13,7 +13,7 @@ public class tableBenchmark {
     final int UPPER = (int) 1e7;
 
     @Test
-    public void testRandomPutGetContainsDeleteTable_Table() {
+    public void testRandomPutGetContainsDeleteTable() {
         final int N = (int) 1e7;
         Table<Integer, Integer> myTable = new Table<Integer, Integer>();
         TreeMap<Integer, Integer> officialTable = new TreeMap<>();

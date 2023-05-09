@@ -1,11 +1,11 @@
 package benchmark;
 
-import Index.BPlusTree;
-import KVTable.Table;
 import org.junit.Test;
 import edu.princeton.cs.algs4.StdRandom;
 import edu.princeton.cs.algs4.Stopwatch;
 
+import Index.BPlusTree;
+import KVTable.Table;
 import java.io.IOException;
 import static Utils.Utils.greaterThan;
 
@@ -44,12 +44,10 @@ public class engineBenchmark {
             switch (mode) {
                 case 0 -> index.delete(key); // 删除
                 case 1 -> index.get(key); // 读取
-                default -> {}
             }
         }
         // 查看视图
         System.out.println(index.indexView());
         System.out.printf("耗时 %.3f s", sw.elapsedTime());
     }
-
 }
