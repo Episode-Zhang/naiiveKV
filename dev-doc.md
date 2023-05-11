@@ -123,3 +123,15 @@ private void removeTable(Page<K, V> page, int pos) {
 
 ---
 
+## V 2.0
+
+新增：
+
+- 用于前端解析、提交用户输入命令的解析器`Parser`与执行器`Executor`模块；
+- 为整个项目增加了一个入口函数`Main.main`；
+- 为数据表结构对应的类`Table`新增了基于序列化与反序列化的磁盘读写功能，对应方法为`public void open() throws IOException, ClassNotFoundException`与`public void close () throws IOException`；
+
+修改：
+
+- 将原来基于内存的B+树重命名为`InMemBPlusTree`，从而避免设计两套增删改查方法；
+- `BPlusTree`类现在在实现`Index`接口时，其增删改查操作都会设计到对应`Table`实例的`open`与`close`；
